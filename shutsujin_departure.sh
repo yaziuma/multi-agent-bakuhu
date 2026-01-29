@@ -19,10 +19,10 @@ if [ -f "./config/settings.yaml" ]; then
     LANG_SETTING=$(grep "^language:" ./config/settings.yaml 2>/dev/null | awk '{print $2}' || echo "ja")
 fi
 
-# シェル設定を読み取り（デフォルト: zsh）
-SHELL_SETTING="zsh"
+# シェル設定を読み取り（デフォルト: bash）
+SHELL_SETTING="bash"
 if [ -f "./config/settings.yaml" ]; then
-    SHELL_SETTING=$(grep "^shell:" ./config/settings.yaml 2>/dev/null | awk '{print $2}' || echo "zsh")
+    SHELL_SETTING=$(grep "^shell:" ./config/settings.yaml 2>/dev/null | awk '{print $2}' || echo "bash")
 fi
 
 # 色付きログ関数（戦国風）
