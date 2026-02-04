@@ -91,11 +91,14 @@ Skills grow organically from real work — not from a predefined template librar
       │    (家老)    │  Session: multiagent, pane 0
       └──────┬──────┘
              │  YAML + send-keys
-    ┌─┬─┬─┬─┴─┬─┬─┬─┐
-    │1│2│3│4│5│6│7│8│  Execute in parallel
-    └─┴─┴─┴─┴─┴─┴─┴─┘
-         ASHIGARU (足軽)
-         Panes 1-8
+    ┌────────┴────────┐
+    │                 │
+    ▼                 ▼
+┌───┬───┬───┐    ┌───┬───┐         ┌────────┐   ┌────────┐
+│ 1 │...│ 3 │    │D1 │D2 │ ──────→ │ Shinobi│   │ Gunshi │
+└───┴───┴───┘    └───┴───┘         │(Gemini)│   │(Codex) │
+   ASHIGARU        DENREI           └────────┘   └────────┘
+   Panes 1-3      Panes 4-5         External Agents
 ```
 
 **Communication protocol:**
@@ -113,6 +116,22 @@ Skills grow organically from real work — not from a predefined template librar
 | Session | `CLAUDE.md`, instructions | `/clear` wipes it |
 
 After `/clear`, an agent recovers in **~2,000 tokens** by reading Memory MCP + its task YAML. No expensive re-prompting.
+
+---
+
+## External Agents
+
+The Shogun can summon external specialists **via Denrei (messengers)** for tasks that require capabilities beyond Claude Code:
+
+| Agent | Tool | Role | Strengths |
+|-------|------|------|-----------|
+| **Shinobi (忍び)** | Gemini CLI | Intelligence & Research | 1M token context, Web search, PDF/video analysis |
+| **Gunshi (軍師)** | Codex CLI | Strategic Advisor | Deep reasoning, Design decisions, Code review |
+
+**Key rules:**
+- Shogun/Karo summon external agents **only via Denrei** (forbidden action F006 if done directly)
+- Denrei handle the blocking API calls, keeping the command chain responsive
+- Ashigaru can summon with explicit permission (`shinobi_allowed: true` in task YAML)
 
 ---
 
@@ -261,6 +280,7 @@ language: en   # Samurai Japanese + English translation
 | Karo | Opus | Enabled |
 | Ashigaru 1–4 | Sonnet | Enabled |
 | Ashigaru 5–8 | Opus | Enabled |
+| Denrei 1–2 | Haiku | Disabled |
 
 ### MCP servers
 
@@ -301,7 +321,10 @@ multi-agent-shogun/
 ├── instructions/              # Agent behavior definitions
 │   ├── shogun.md
 │   ├── karo.md
-│   └── ashigaru.md
+│   ├── ashigaru.md
+│   ├── denrei.md              # Messenger agents
+│   ├── shinobi.md             # Gemini integration
+│   └── gunshi.md              # Codex integration
 │
 ├── config/
 │   ├── settings.yaml          # Language, model, screenshot settings
@@ -310,7 +333,16 @@ multi-agent-shogun/
 ├── queue/                     # Communication (source of truth)
 │   ├── shogun_to_karo.yaml
 │   ├── tasks/ashigaru{1-8}.yaml
-│   └── reports/ashigaru{1-8}_report.yaml
+│   ├── reports/ashigaru{1-8}_report.yaml
+│   ├── denrei/
+│   │   ├── tasks/denrei{1-2}.yaml
+│   │   └── reports/denrei{1-2}_report.yaml
+│   ├── shinobi/
+│   │   ├── requests/
+│   │   └── reports/
+│   └── gunshi/
+│       ├── requests/
+│       └── reports/
 │
 ├── memory/                    # Memory MCP persistent storage
 ├── dashboard.md               # Human-readable status board
