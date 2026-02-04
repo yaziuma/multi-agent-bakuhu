@@ -1,0 +1,8 @@
+# 伝令2専用タスクファイル
+task:
+  task_id: null
+  parent_cmd: null
+  description: null
+  external_agent: null  # shinobi | gunshi
+  status: idle
+  timestamp: ""

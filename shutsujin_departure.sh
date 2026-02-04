@@ -36,6 +36,16 @@ if [ -f "./config/settings.yaml" ]; then
     fi
 fi
 
+# 伝令の人数を読み取り（デフォルト: 2）
+DENREI_COUNT=2
+if [ -f "./config/settings.yaml" ]; then
+    DENREI_COUNT=$(yq eval '.denrei.max_count' ./config/settings.yaml 2>/dev/null || echo "2")
+    # 数値でない場合や範囲外の場合はデフォルト値を使用
+    if ! [[ "$DENREI_COUNT" =~ ^[1-2]$ ]]; then
+        DENREI_COUNT=2
+    fi
+fi
+
 # 色付きログ関数（戦国風）
 log_info() {
     echo -e "\033[1;33m【報】\033[0m $1"
@@ -280,6 +290,8 @@ fi
 # queue ディレクトリが存在しない場合は作成（初回起動時に必要）
 [ -d ./queue/reports ] || mkdir -p ./queue/reports
 [ -d ./queue/tasks ] || mkdir -p ./queue/tasks
+[ -d ./queue/denrei/tasks ] || mkdir -p ./queue/denrei/tasks
+[ -d ./queue/denrei/reports ] || mkdir -p ./queue/denrei/reports
 
 if [ "$CLEAN_MODE" = true ]; then
     log_info "📜 前回の軍議記録を破棄中..."
@@ -302,6 +314,31 @@ EOF
     for i in $(seq 1 $ASHIGARU_COUNT); do
         cat > ./queue/reports/ashigaru${i}_report.yaml << EOF
 worker_id: ashigaru${i}
+task_id: null
+timestamp: ""
+status: idle
+result: null
+EOF
+    done
+
+    # 伝令タスクファイルリセット
+    for i in $(seq 1 $DENREI_COUNT); do
+        cat > ./queue/denrei/tasks/denrei${i}.yaml << EOF
+# 伝令${i}専用タスクファイル
+task:
+  task_id: null
+  parent_cmd: null
+  description: null
+  target_type: null
+  status: idle
+  timestamp: ""
+EOF
+    done
+
+    # 伝令レポートファイルリセット
+    for i in $(seq 1 $DENREI_COUNT); do
+        cat > ./queue/denrei/reports/denrei${i}_report.yaml << EOF
+worker_id: denrei${i}
 task_id: null
 timestamp: ""
 status: idle
@@ -444,10 +481,10 @@ echo ""
 PANE_BASE=$(tmux show-options -gv pane-base-index 2>/dev/null || echo 0)
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# STEP 5.1: multiagent セッション作成（karo + ashigaru1-N）
+# STEP 5.1: multiagent セッション作成（karo + ashigaru1-N + denrei1-M）
 # ═══════════════════════════════════════════════════════════════════════════════
-TOTAL_PANES=$((1 + ASHIGARU_COUNT))  # karo + 足軽の数
-log_war "⚔️ 家老・足軽の陣を構築中（${TOTAL_PANES}名配備）..."
+TOTAL_PANES=$((1 + ASHIGARU_COUNT + DENREI_COUNT))  # karo + 足軽 + 伝令
+log_war "⚔️ 家老・足軽・伝令の陣を構築中（${TOTAL_PANES}名配備）..."
 
 # 最初のペイン作成
 if ! tmux new-session -d -s multiagent -n "agents" 2>/dev/null; then
@@ -502,7 +539,17 @@ for i in $(seq 1 $ASHIGARU_COUNT); do
     fi
 done
 
-for i in $(seq 0 $ASHIGARU_COUNT); do
+# 伝令の設定を追加
+for i in $(seq 1 $DENREI_COUNT); do
+    PANE_LABELS+=("denrei${i}")
+    PANE_TITLES+=("denrei${i}(Haiku)")
+    PANE_COLORS+=("cyan")
+    AGENT_IDS+=("denrei${i}")
+    MODEL_NAMES+=("Haiku")
+done
+
+TOTAL_AGENTS=$((ASHIGARU_COUNT + DENREI_COUNT))
+for i in $(seq 0 $TOTAL_AGENTS); do
     p=$((PANE_BASE + i))
     tmux select-pane -t "multiagent:agents.${p}" -T "${PANE_TITLES[$i]}"
     tmux set-option -p -t "multiagent:agents.${p}" @agent_id "${AGENT_IDS[$i]}"
@@ -576,10 +623,20 @@ if [ "$SETUP_ONLY" = false ]; then
         fi
     fi
 
+    # 伝令（pane 9, 10）: Haiku
+    for i in $(seq 1 $DENREI_COUNT); do
+        p=$((PANE_BASE + ASHIGARU_COUNT + i))
+        tmux send-keys -t "multiagent:agents.${p}" "claude --model haiku --dangerously-skip-permissions"
+        tmux send-keys -t "multiagent:agents.${p}" Enter
+    done
+    if [ "$DENREI_COUNT" -gt 0 ]; then
+        log_info "  └─ 伝令1-${DENREI_COUNT}（Haiku）、召喚完了"
+    fi
+
     if [ "$KESSEN_MODE" = true ]; then
         log_success "✅ 決戦の陣で出陣！全軍Opus！"
     else
-        log_success "✅ 平時の陣で出陣（足軽${ASHIGARU_COUNT}名）"
+        log_success "✅ 平時の陣で出陣（足軽${ASHIGARU_COUNT}名、伝令${DENREI_COUNT}名）"
     fi
     echo ""
 
@@ -689,7 +746,20 @@ NINJA_EOF
         sleep 0.5
     done
 
-    log_success "✅ 全軍に指示書伝達完了（足軽${ASHIGARU_COUNT}名）"
+    # 伝令に指示書を読み込ませる
+    if [ "$DENREI_COUNT" -gt 0 ]; then
+        sleep 2
+        log_info "  └─ 伝令に指示書を伝達中..."
+        for i in $(seq 1 $DENREI_COUNT); do
+            p=$((PANE_BASE + ASHIGARU_COUNT + i))
+            tmux send-keys -t "multiagent:agents.${p}" "instructions/denrei.md を読んで役割を理解せよ。汝は伝令${i}号である。"
+            sleep 0.3
+            tmux send-keys -t "multiagent:agents.${p}" Enter
+            sleep 0.5
+        done
+    fi
+
+    log_success "✅ 全軍に指示書伝達完了（足軽${ASHIGARU_COUNT}名、伝令${DENREI_COUNT}名）"
     echo ""
 fi
 
@@ -712,13 +782,19 @@ echo "     ┌──────────────────────
 echo "     │  Pane 0: 将軍 (SHOGUN)      │  ← 総大将・プロジェクト統括"
 echo "     └─────────────────────────────┘"
 echo ""
-echo "     【multiagentセッション】家老・足軽の陣（計${TOTAL_PANES}ペイン）"
+echo "     【multiagentセッション】家老・足軽・伝令の陣（計${TOTAL_PANES}ペイン）"
 echo "     ┌─────────────────────────────┐"
 echo "     │  karo (家老) - タスク管理    │"
 echo "     ├─────────────────────────────┤"
 for i in $(seq 1 $ASHIGARU_COUNT); do
     echo "     │  ashigaru${i} (足軽${i})         │"
 done
+if [ "$DENREI_COUNT" -gt 0 ]; then
+    echo "     ├─────────────────────────────┤"
+    for i in $(seq 1 $DENREI_COUNT); do
+        echo "     │  denrei${i} (伝令${i})           │"
+    done
+fi
 echo "     └─────────────────────────────┘"
 echo "     ※ 実際のレイアウトは tiled 配置"
 echo ""

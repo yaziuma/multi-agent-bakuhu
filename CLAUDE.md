@@ -140,11 +140,15 @@ Layer 4: Session（揮発・コンテキスト内）
 │    KARO      │ ← 家老（タスク管理・分配）
 │   (家老)     │
 └──────┬───────┘
-       │ YAMLファイル経由
-       ▼
-┌───┬───┬───┐
-│A1 │A2 │A3 │ ← 足軽（実働部隊）
-└───┴───┴───┘
+       │
+ ┌─────┴─────────────────┐
+ │                       │
+ ▼                       ▼
+┌───┬───┬───┐         ┌───┬───┐         ┌──────┐   ┌──────┐
+│A1 │...│A8 │         │D1 │D2 │ ──────→ │ 忍び │   │ 軍師 │
+└───┴───┴───┘         └───┴───┘         └──────┘   └──────┘
+    足軽                 伝令              外部エージェント
+   (実装)              (連絡係)          (諜報/戦略参謀)
 ```
 
 ## ファイル操作の鉄則（全エージェント必須）
@@ -171,6 +175,12 @@ Layer 4: Session（揮発・コンテキスト内）
 - **上→下への指示**: YAML + send-keys で起こす
 - 理由: 殿（人間）の入力中に割り込みが発生するのを防ぐ。足軽→家老は同じtmuxセッション内のため割り込みリスクなし
 
+### 外部エージェント召喚の鉄則
+忍び（Gemini）・軍師（Codex）への依頼は **必ず伝令経由** で行うこと。
+将軍・家老が直接召喚することは禁止（F006違反）。
+
+**理由**: 外部エージェント召喚は応答待ちでブロックされる。伝令を経由することで将軍・家老の処理を止めず、並列実行を維持できる。
+
 ### ファイル構成
 ```
 config/projects.yaml              # プロジェクト一覧（サマリのみ）
@@ -179,6 +189,12 @@ status/master_status.yaml         # 全体進捗
 queue/shogun_to_karo.yaml         # Shogun → Karo 指示
 queue/tasks/ashigaru{N}.yaml      # Karo → Ashigaru 割当（各足軽専用）
 queue/reports/ashigaru{N}_report.yaml  # Ashigaru → Karo 報告
+queue/denrei/tasks/denrei{N}.yaml     # 伝令タスク
+queue/denrei/reports/denrei{N}_report.yaml  # 伝令報告
+queue/shinobi/requests/           # 忍びへの依頼（履歴）
+queue/shinobi/reports/            # 忍びからの調査報告
+queue/gunshi/requests/                # 軍師への依頼
+queue/gunshi/reports/                 # 軍師からの報告
 dashboard.md                      # 人間用ダッシュボード
 ```
 
@@ -237,6 +253,36 @@ language: ja  # ja, en, es, zh, ko, fr, de 等
 - instructions/shogun.md - 将軍の指示書
 - instructions/karo.md - 家老の指示書
 - instructions/ashigaru.md - 足軽の指示書
+- instructions/denrei.md - 伝令の指示書
+- instructions/shinobi.md - 忍びの指示書
+- instructions/gunshi.md - 軍師の指示書
+
+## 忍び（Shinobi / Gemini）
+
+忍びは諜報・調査専門の外部委託エージェントである。Gemini CLI 経由でオンデマンド召喚する。
+
+### 忍びの能力
+- **Web検索**: Google Search統合で最新情報取得
+- **大規模分析**: 1Mトークンコンテキストでコードベース全体を分析
+- **マルチモーダル**: PDF/動画/音声の内容抽出
+
+### 召喚権限
+| 召喚者 | 可否 | 条件 | 伝令経由 |
+|--------|------|------|---------|
+| 将軍 | ○ | 無条件 | 必須 |
+| 家老 | ○ | 無条件 | 必須 |
+| 足軽 | △ | タスクYAMLに `shinobi_allowed: true` がある場合のみ | 必須 |
+
+### 基本的な召喚方法
+```bash
+# 調査依頼
+gemini -p "調査内容" 2>/dev/null > queue/shinobi/reports/report_001.md
+
+# 結果の要約取得（コンテキスト保護）
+head -50 queue/shinobi/reports/report_001.md
+```
+
+詳細は instructions/shinobi.md を参照。
 
 ## Summary生成時の必須事項
 
