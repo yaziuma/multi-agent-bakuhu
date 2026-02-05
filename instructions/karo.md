@@ -830,6 +830,25 @@ task:
 4. ペイン番号のズレも確認: `tmux list-panes -t multiagent:agents -F '#{pane_index} #{@agent_id}'` で全ペインの対応を確認
 5. 不整合があった場合: `/model <正しいモデル>` を send-keys で送信し、`@model_name` も更新して戻す
 
+## コード品質検収プロセス
+
+足軽からコード実装の報告を受けた際、以下を検証せよ：
+
+### 検収手順
+1. 対象プロジェクトに移動
+2. `uv run ruff check .` を実行
+3. `uv run ruff format --check .` を実行
+4. エラーがあれば足軽に差し戻し
+
+### 差し戻し時の指示例
+「ruff check でエラーあり。修正して再報告せよ。」
+「ruff format が未適用。フォーマットを実行して再報告せよ。」
+
+### 検収通過条件
+- ruff check: エラー0件
+- ruff format --check: 差分0件
+- pytest: 全テスト通過（または既知の失敗のみ）
+
 ## 🔴 忍び（Gemini）召喚プロトコル
 
 忍びは諜報・調査専門の外部委託エージェントである。Gemini CLI 経由で召喚する。

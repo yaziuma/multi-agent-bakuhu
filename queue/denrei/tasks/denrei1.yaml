@@ -1,8 +1,105 @@
 # 伝令1専用タスクファイル
 task:
-  task_id: null
-  parent_cmd: null
-  description: null
-  external_agent: null  # shinobi | gunshi
-  status: idle
-  timestamp: ""
+  task_id: denrei_022_kokoro_full
+  parent_cmd: cmd_022
+  priority: urgent
+  description: |
+    【緊急】忍び（Gemini）を召喚し、Kokoro TTS ライブラリの完全なAPI調査を実施せよ。
+
+    ## 調査内容（6項目）
+
+    1. **KPipeline の全メソッド・プロパティと使用例**
+       - 利用可能な全メソッド一覧
+       - 各メソッドのシグネチャと引数
+       - 使用例（コード付き）
+
+    2. **音声合成の完全なフロー（テキスト→音声ファイル保存まで）**
+       - 初期化からファイル保存までの全ステップ
+       - サンプルコード（日本語テキストを音声ファイルに保存）
+
+    3. **日本語対応の正しい設定方法**
+       - lang / lang_code パラメータの正しい使い方
+       - 日本語に必要な依存関係
+       - 設定例
+
+    4. **利用可能な voice 一覧と取得方法**
+       - voice/speaker の一覧取得メソッド
+       - デフォルトのvoice名
+       - 推奨されるvoice
+
+    5. **出力形式（waveform, sample_rate 等）の取得方法**
+       - 生成される音声データの型（Tensor, numpy array 等）
+       - sample_rate の取得方法
+       - torchaudio.save() への渡し方
+
+    6. **必要な依存パッケージ一覧**
+       - kokoro-tts が依存するパッケージ全て
+       - オプショナル依存
+       - 日本語対応に必須のパッケージ
+
+    ## Gemini CLI コマンド
+
+    ```bash
+    gemini -p "Research Kokoro TTS Python library (kokoro-tts package) - Complete API Investigation:
+
+    ## CRITICAL: Current Error Context
+    We are getting these errors with kokoro-tts:
+    - 'KPipeline' object has no attribute 'list_voices'
+    - 'KPipeline' object has no attribute 'tts'
+    - 'str' object has no attribute 'phonemes' (when using g2p() and generate_from_tokens())
+
+    We need the CORRECT API usage for version 2.3.0+
+
+    ## 1. KPipeline Complete Method List
+    - List ALL available methods and properties of KPipeline class
+    - Method signatures with parameter types
+    - Usage examples for each method
+
+    ## 2. Text-to-Speech Complete Flow
+    - Step-by-step: text → audio file saved to disk
+    - Complete working code example (Japanese text to WAV file)
+    - Show ACTUAL method names (not tts(), not list_voices() if they don't exist)
+
+    ## 3. Japanese Language Support
+    - Correct parameter: lang or lang_code?
+    - Required dependencies for Japanese (pyopenjtalk, fugashi, etc.)
+    - Configuration example
+
+    ## 4. Available Voices/Speakers
+    - How to get list of available voices? (if list_voices() doesn't exist, what's the correct method?)
+    - Default voice name
+    - Recommended voices for Japanese
+
+    ## 5. Output Format
+    - What does the audio generation return? (Tensor, numpy array, dict?)
+    - How to get sample_rate?
+    - How to save with torchaudio.save()?
+    - Shape of waveform tensor
+
+    ## 6. Dependencies
+    - Complete list of required packages
+    - Optional dependencies
+    - Packages required for Japanese support
+
+    ## 7. Working Example
+    Provide a COMPLETE working Python script that:
+    - Initializes KPipeline for Japanese
+    - Converts Japanese text to speech
+    - Saves audio to WAV file
+    - Uses ONLY methods that actually exist in kokoro-tts 2.3.0+
+
+    Output in markdown format with code blocks.
+    Be specific about imports, class names, and method names.
+    Verify all information against the actual kokoro-tts package." 2>/dev/null > /home/suise/projects/multi-agent-bakuhu/queue/shinobi/reports/report_cmd_022_kokoro_full.md
+    ```
+
+    ## 結果保存先
+    queue/shinobi/reports/report_cmd_022_kokoro_full.md
+
+    ## 完了後
+    1. 報告YAMLを作成: queue/denrei/reports/denrei1_report.yaml
+    2. 家老に send-keys で報告
+
+  external_agent: shinobi
+  status: assigned
+  timestamp: "2026-02-05T18:30:00"
