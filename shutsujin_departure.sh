@@ -713,6 +713,16 @@ NINJA_EOF
 
     echo "  Claude Code の起動を待機中（最大30秒）..."
 
+    # shogun セッションが無ければ作る
+    if ! tmux has-session -t shogun 2>/dev/null; then
+        tmux new-session -d -s shogun -n main
+    fi
+
+    # main ウィンドウが無い場合の保険（既存セッションが別構成だった時）
+    if ! tmux list-windows -t shogun 2>/dev/null | grep -q '^0: main'; then
+        tmux new-window -t shogun -n main 2>/dev/null || true
+    fi
+    
     # 将軍の起動を確認（最大30秒待機）
     for i in {1..30}; do
         if tmux capture-pane -t shogun:main -p | grep -q "bypass permissions"; then
