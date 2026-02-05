@@ -1,0 +1,21 @@
+{
+  "model": {
+    "name": "gemini-2.5-pro"
+  },
+  "context": {
+    "fileName": ["CLAUDE.md", "instructions/shinobi.md"],
+    "discoveryMaxDirs": 100,
+    "fileFiltering": {
+      "respectGitIgnore": true,
+      "respectGeminiIgnore": true
+    }
+  },
+  "tools": {
+    "sandbox": false,
+    "autoAccept": false
+  },
+  "experimental": {
+    "skills": false,
+    "enableAgents": false
+  }
+}

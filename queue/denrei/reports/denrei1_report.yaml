@@ -1,5 +1,31 @@
 worker_id: denrei1
-task_id: null
-timestamp: ""
-status: idle
-result: null
+task_id: denrei_022_kokoro_full
+timestamp: "2026-02-05T19:47:27"
+status: done
+result:
+  summary: "【緊急調査完了】Kokoro TTS API 正確な仕様確認"
+  external_agent: shinobi
+  output_file: "queue/shinobi/reports/report_cmd_022_kokoro_full.md"
+  notes: |
+    【重要な誤り発見と修正】
+    ✅ 正確なAPI確認完了（前回調査は誤りあり）
+
+    【修正内容】
+    - lang_code='j' を使用（lang='ja' ではない）
+    - __call__() メソッドが正式API（.tts() は存在しない）
+    - pipeline() はジェネレータを返す
+    - 出力: (graphemes, phonemes, audio_tensor) のタプル
+    - sample_rate 固定: 24000 Hz
+
+    【必須依存パッケージ】
+    - kokoro, soundfile, torch
+    - misaki[ja] (fugashi, ipadic, pyopenjtalk含む)
+    - espeak-ng (システムパッケージ)
+
+    【推奨音声】
+    - 女性: jf_alpha, jf_gongitsune, jf_nezumi, jf_tebukuro
+    - 男性: jm_kumo
+
+    【作業コード完全実装例あり】
+    - 完全な Python スクリプト例（テキスト→WAV保存まで）
+    - インポート、初期化、処理フロー全記載

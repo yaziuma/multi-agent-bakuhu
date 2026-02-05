@@ -1,5 +1,9 @@
 worker_id: denrei2
-task_id: null
-timestamp: ""
-status: idle
-result: null
+task_id: denrei_012_6
+timestamp: "2026-02-05T00:50:35"
+status: done
+result:
+  summary: "Kokoro TTS 調査完了"
+  external_agent: shinobi
+  output_file: "queue/shinobi/reports/report_cmd_012_kokoro_tts.md"
+  notes: "Kokoro TTS（テキスト音声変換）の詳細調査完了。インストール方法・基本的な使い方・日本語モデル指定・パラメータ調整・音声ファイル保存・GPU利用・エラーハンドリング、および実装用コード例を含む詳細レポートを生成しました。"

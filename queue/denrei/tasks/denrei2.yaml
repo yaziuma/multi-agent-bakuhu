@@ -1,8 +1,84 @@
 # 伝令2専用タスクファイル
 task:
-  task_id: null
-  parent_cmd: null
-  description: null
-  external_agent: null  # shinobi | gunshi
-  status: idle
-  timestamp: ""
+  task_id: denrei_012_6
+  parent_cmd: cmd_012
+  description: |
+    忍び（Gemini）を召喚し、Kokoro TTS の使い方を調査せよ。
+
+    ## 調査内容
+
+    ### Kokoro TTS（音声生成用）
+
+    調査項目：
+    - インストール方法（pip、依存関係）
+    - 基本的な使い方（テキスト→音声変換）
+    - 日本語モデルの指定方法
+    - 話者・速度・ピッチの調整
+    - 音声ファイルの保存（WAV/MP3）
+    - 非同期対応の可否
+    - GPU利用の方法（オプション）
+    - エラーハンドリング
+
+    出力コード例：
+    - 基本的な音声生成
+    - 日本語テキストの読み上げ
+    - パラメータ調整（速度、話者）
+    - ファイル保存
+
+    ## 注意事項
+    - Kokoro TTS は Apache 2.0 ライセンス
+    - クレジット表記不要
+    - オフライン動作可能
+
+    ## Gemini CLI コマンド
+    ```bash
+    gemini -p "Research Kokoro TTS library for Python:
+
+    ## Kokoro TTS (Text-to-Speech)
+
+    Provide detailed information:
+
+    1. Installation
+       - pip install command
+       - Dependencies (torch, etc.)
+       - Model download
+
+    2. Basic Usage
+       - Text to speech conversion
+       - Japanese language model selection
+       - Voice/speaker selection
+       - Speed and pitch adjustment
+
+    3. Audio Output
+       - Save to WAV file
+       - Save to MP3 (if supported)
+       - Audio format options
+
+    4. Advanced Features
+       - Async support (if available)
+       - GPU acceleration
+       - Batch processing
+
+    5. Error Handling
+       - Common errors and solutions
+       - Model loading issues
+
+    Provide working Python code examples for:
+    - Basic Japanese TTS
+    - Saving audio to file
+    - Parameter adjustment (speed, voice)
+    - Integration pattern for news anchor use case
+
+    Output in markdown with working Python code examples.
+    Do not include thinking process. Output only the final result." 2>/dev/null > /home/suise/projects/multi-agent-bakuhu/queue/shinobi/reports/report_cmd_012_kokoro_tts.md
+    ```
+
+    ## 結果保存先
+    queue/shinobi/reports/report_cmd_012_kokoro_tts.md
+
+    ## 完了後
+    家老に報告せよ（send-keys で起こす）
+
+  external_agent: shinobi
+  status: done
+  timestamp: "2026-02-05T01:40:00"
