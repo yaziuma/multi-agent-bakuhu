@@ -152,10 +152,15 @@ config/settings.yaml の `karo_standby.enabled: true` で有効化。
 - 主家老が /clear 実行前に dashboard.md に「家老交代」を記載
 - 将軍が控え家老に send-keys で引き継ぎ指示を送る
 
-## 分離済みスキル（詳細参照用）
+## スキル構成
 
-| スキル | 内容 | 参照タイミング |
-|--------|------|---------------|
-| `skills/context-health.md` | /compact テンプレート、混合戦略詳細、使い分け表 | /compact 実行時 |
-| `skills/shinobi-manual.md` | 忍び能力、召喚権限、召喚方法 | 忍び召喚時 |
-| `skills/architecture.md` | 四層モデル、階層構造、プロジェクト管理 | 設計参照時 |
+```
+skills/                        # 体制必須スキル（git管理対象）
+  ├─ context-health.md         # /compact テンプレート、混合戦略詳細
+  ├─ shinobi-manual.md         # 忍び能力、召喚権限、召喚方法
+  ├─ architecture.md           # 四層モデル、階層構造、プロジェクト管理
+  ├─ skill-creator/            # スキル自動生成メタスキル（fork由来）
+  └─ generated/                # 開発PJ由来スキル（git管理外）
+      ├─ async-rss-fetcher.md
+      └─ ...
+```
