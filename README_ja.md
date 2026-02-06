@@ -1,10 +1,10 @@
-# multi-agent-shogun
+# multi-agent-bakuhu
 
 <div align="center">
 
 **Claude Code マルチエージェント統率システム**
 
-*コマンド1つで、8体のAIエージェントが並列稼働*
+*コマンド1つで、複数のAIエージェントが並列稼働*
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Claude Code](https://img.shields.io/badge/Claude-Code-blueviolet)](https://claude.ai)
@@ -18,13 +18,16 @@
 
 ## これは何？
 
-**multi-agent-shogun** は、複数の Claude Code インスタンスを同時に実行し、戦国時代の軍制のように統率するシステムです。
+**multi-agent-bakuhu** は、複数の Claude Code インスタンスを同時に実行し、戦国時代の軍制のように統率するシステムです。
+
+> [yohey-w/multi-agent-shogun](https://github.com/yohey-w/multi-agent-shogun) からフォーク。外部エージェント連携、コンテキスト健康管理、退避システム、より深い封建階層を追加し、大幅に再設計。
 
 **なぜ使うのか？**
-- 1つの命令で、8体のAIワーカーが並列で実行
-- 待ち時間なし - タスクがバックグラウンドで実行中も次の命令を出せる
+- 1つの命令で、複数のAIワーカーが並列で実行
+- 待ち時間なし — タスクがバックグラウンドで実行中も次の命令を出せる
 - AIがセッションを跨いであなたの好みを記憶（Memory MCP）
 - ダッシュボードでリアルタイム進捗確認
+- Claude以外のAI（Gemini、Codex）も伝令経由で召喚可能
 
 ```
       あなた（上様）
@@ -38,10 +41,14 @@
     │    KARO     │  ← タスクをワーカーに分配
     └──────┬──────┘
            │
-  ┌─┬─┬─┬─┴─┬─┬─┬─┐
-  │1│2│3│4│5│6│7│8│  ← 8体のワーカーが並列実行
-  └─┴─┴─┴─┴─┴─┴─┴─┘
-      ASHIGARU
+    ┌──────┴──────┐
+    │             │
+    ▼             ▼
+ ┌─┬─┬─┐     ┌──┬──┐        ┌────────┐  ┌────────┐
+ │1│2│3│     │D1│D2│ ─────→ │ 忍び   │  │ 軍師   │
+ └─┴─┴─┘     └──┴──┘        │(Gemini)│  │(Codex) │
+  足 軽       伝 令          └────────┘  └────────┘
+                              外部エージェント
 ```
 
 ---
@@ -61,9 +68,9 @@
 
 📥 **リポジトリをダウンロード**
 
-[ZIPダウンロード](https://github.com/yohey-w/multi-agent-shogun/archive/refs/heads/main.zip) して `C:\tools\multi-agent-shogun` に展開
+[ZIPダウンロード](https://github.com/yaziuma/multi-agent-bakuhu/archive/refs/heads/main.zip) して `C:\tools\multi-agent-bakuhu` に展開
 
-*または git を使用:* `git clone https://github.com/yohey-w/multi-agent-shogun.git C:\tools\multi-agent-shogun`
+*または git を使用:* `git clone https://github.com/yaziuma/multi-agent-bakuhu.git C:\tools\multi-agent-bakuhu`
 
 </td>
 </tr>
@@ -92,7 +99,7 @@
 🐧 **Ubuntu を開いて以下を実行**（初回のみ）
 
 ```bash
-cd /mnt/c/tools/multi-agent-shogun
+cd /mnt/c/tools/multi-agent-bakuhu
 ./first_setup.sh
 ```
 
@@ -121,7 +128,7 @@ cd /mnt/c/tools/multi-agent-shogun
 **Ubuntuターミナル**（WSL）を開いて実行：
 
 ```bash
-cd /mnt/c/tools/multi-agent-shogun
+cd /mnt/c/tools/multi-agent-bakuhu
 ./shutsujin_departure.sh
 ```
 
@@ -134,8 +141,8 @@ cd /mnt/c/tools/multi-agent-shogun
 
 ```bash
 # 1. リポジトリをクローン
-git clone https://github.com/yohey-w/multi-agent-shogun.git ~/multi-agent-shogun
-cd ~/multi-agent-shogun
+git clone https://github.com/yaziuma/multi-agent-bakuhu.git ~/multi-agent-bakuhu
+cd ~/multi-agent-bakuhu
 
 # 2. スクリプトに実行権限を付与
 chmod +x *.sh
@@ -147,7 +154,7 @@ chmod +x *.sh
 ### 毎日の起動
 
 ```bash
-cd ~/multi-agent-shogun
+cd ~/multi-agent-bakuhu
 ./shutsujin_departure.sh
 ```
 
@@ -189,16 +196,12 @@ wsl --install
 | `first_setup.sh` | tmux、Node.js、Claude Code CLI のインストール + Memory MCP設定 | 初回のみ |
 | `shutsujin_departure.sh` | tmuxセッション作成 + Claude Code起動 + 指示書読み込み | 毎日 |
 
-### `install.bat` が自動で行うこと：
-- ✅ WSL2がインストールされているかチェック（未インストールなら案内）
-- ✅ Ubuntuがインストールされているかチェック（未インストールなら案内）
-- ✅ 次のステップ（`first_setup.sh` の実行方法）を案内
-
 ### `shutsujin_departure.sh` が行うこと：
 - ✅ tmuxセッションを作成（shogun + multiagent）
 - ✅ 全エージェントでClaude Codeを起動
 - ✅ 各エージェントに指示書を自動読み込み
 - ✅ キューファイルをリセットして新しい状態に
+- ✅ 控え家老の起動（有効時）
 
 **実行後、全エージェントが即座にコマンドを受け付ける準備完了！**
 
@@ -225,17 +228,20 @@ wsl --install
 
 ### ✅ セットアップ後の状態
 
-どちらのオプションでも、**10体のAIエージェント**が自動起動します：
+どちらのオプションでも、以下のAIエージェントが自動起動します：
 
-| エージェント | 役割 | 数 |
-|-------------|------|-----|
-| 🏯 将軍（Shogun） | 総大将 - あなたの命令を受ける | 1 |
-| 📋 家老（Karo） | 管理者 - タスクを分配 | 1 |
-| ⚔️ 足軽（Ashigaru） | ワーカー - 並列でタスク実行 | 8 |
+| エージェント | 役割 | 数 | モデル |
+|-------------|------|-----|-------|
+| 🏯 将軍（Shogun） | 総大将 — あなたの命令を受ける | 1 | Opus |
+| 📋 家老（Karo） | 管理者 — タスクを分配、ダッシュボード管理 | 1 (+控え1) | Opus |
+| ⚔️ 足軽（Ashigaru） | ワーカー — 並列でタスク実行 | 設定可（デフォルト3） | Sonnet/Opus |
+| 📨 伝令（Denrei） | 使者 — 外部エージェントとの通信 | 2 | Haiku |
+| 🥷 忍び（Shinobi） | 諜報 — 調査・ウェブ検索・大規模文書分析 | 外部 | Gemini |
+| 🧠 軍師（Gunshi） | 参謀 — 深い推論・設計判断・コードレビュー | 外部 | Codex |
 
 tmuxセッションが作成されます：
-- `shogun` - ここに接続してコマンドを出す
-- `multiagent` - ワーカーがバックグラウンドで稼働
+- `shogun` — ここに接続してコマンドを出す
+- `multiagent` — ワーカーがバックグラウンドで稼働
 
 ---
 
@@ -265,6 +271,7 @@ JavaScriptフレームワーク上位5つを調査して比較表を作成せよ
 3. 即座にあなたに制御を返す（待つ必要なし！）
 
 その間、家老はタスクを足軽ワーカーに分配し、並列実行します。
+より深い調査が必要な場合、家老は伝令を派遣して忍び（Gemini）を召喚します。
 
 ### Step 3: 進捗を確認
 
@@ -285,11 +292,12 @@ JavaScriptフレームワーク上位5つを調査して比較表を作成せよ
 
 ### ⚡ 1. 並列実行
 
-1つの命令で最大8つの並列タスクを生成：
+1つの命令で複数の並列タスクを生成：
 
 ```
 あなた: 「5つのMCPサーバを調査せよ」
-→ 5体の足軽が同時に調査開始
+→ 3体の足軽が同時に調査開始
+→ 不足分は伝令が忍び（Gemini）を召喚して補完
 → 数時間ではなく数分で結果が出る
 ```
 
@@ -307,7 +315,18 @@ JavaScriptフレームワーク上位5つを調査して比較表を作成せよ
 
 長いタスクの完了を待つ必要はありません。
 
-### 🧠 3. セッション間記憶（Memory MCP）
+### 🌐 3. マルチモデル連携
+
+Claude だけでなく、Gemini と Codex も統合：
+
+| エージェント | モデル | 得意分野 |
+|-------------|--------|---------|
+| 忍び | Gemini | 100万トークン文脈、ウェブ検索、PDF/動画分析 |
+| 軍師 | Codex | 深い推論、設計判断、コードレビュー |
+
+外部エージェントは必ず **伝令経由** で召喚。伝令がブロッキングAPIコールを引き受けるため、指揮系統は常にレスポンシブ。
+
+### 🧠 4. セッション間記憶（Memory MCP）
 
 AIがあなたの好みを記憶します：
 
@@ -319,12 +338,12 @@ AIがあなたの好みを記憶します：
             → 複雑な方法を提案しなくなる
 ```
 
-### 📡 4. イベント駆動（ポーリングなし）
+### 📡 5. イベント駆動（ポーリングなし）
 
 エージェントはYAMLファイルで通信し、tmux send-keysで互いを起こします。
 **ポーリングループでAPIコールを浪費しません。**
 
-### 📸 5. スクリーンショット連携
+### 📸 6. スクリーンショット連携
 
 VSCode拡張のClaude Codeはスクショを貼り付けて事象を説明できます。このCLIシステムでも同等の機能を実現：
 
@@ -341,19 +360,14 @@ screenshot:
 
 **💡 Windowsのコツ:** `Win + Shift + S` でスクショが撮れます。保存先を `settings.yaml` のパスに合わせると、シームレスに連携できます。
 
-こんな時に便利：
-- UIのバグを視覚的に説明
-- エラーメッセージを見せる
-- 変更前後の状態を比較
-
-### 📁 6. コンテキスト管理
+### 📁 7. コンテキスト管理
 
 効率的な知識共有のため、四層構造のコンテキストを採用：
 
 | レイヤー | 場所 | 用途 |
 |---------|------|------|
 | Layer 1: Memory MCP | `memory/shogun_memory.jsonl` | プロジェクト横断・セッションを跨ぐ長期記憶 |
-| Layer 2: Project | `config/projects.yaml`, `projects/<id>.yaml`, `context/{project}.md` | プロジェクト固有情報・技術知見 |
+| Layer 2: Project | `config/projects.yaml`, `context/{project}.md` | プロジェクト固有情報・技術知見 |
 | Layer 3: YAML Queue | `queue/shogun_to_karo.yaml`, `queue/tasks/`, `queue/reports/` | タスク管理・指示と報告の正データ |
 | Layer 4: Session | CLAUDE.md, instructions/*.md | 作業中コンテキスト（/clearで破棄） |
 
@@ -375,6 +389,23 @@ screenshot:
 4. タスクYAML 読み込み → 次の仕事を確認（~800トークン）
 
 「何を読ませないか」の設計がコスト削減に効いている。
+
+### 🩺 8. コンテキスト健康管理
+
+長時間稼働するエージェントはコンテキストが肥大化し、APIコストが増大する。各エージェントに最適な戦略を割り当て：
+
+| エージェント | 推奨戦略 | 理由 |
+|-------------|----------|------|
+| 将軍 | `/compact` 優先 | コンテキスト保持が重要 |
+| 家老 | 混合: `/compact` 3回 → `/clear` 1回 | 保持とコストのバランス（30%削減） |
+| 足軽 | タスク完了ごとに `/clear` | タスク単位でリセット |
+| 伝令 | タスク完了ごとに `/clear` | ステートレス設計 |
+
+**控え家老（ホットスタンバイ）** が待機しており、主家老が `/clear` を必要とする際に引き継ぎ可能。運用の継続性を確保。
+
+### 📦 9. 退避（アーカイブ）システム
+
+完了コマンド、古いレポート、解決済みのダッシュボードセクションは `logs/archive/YYYY-MM-DD/` に退避（削除は一切行わない）。`scripts/extract-section.sh` でダッシュボードの必要セクションだけを選択的に読み込み、コンパクション復帰時のトークン消費を削減。
 
 ### 汎用コンテキストテンプレート
 
@@ -403,19 +434,19 @@ screenshot:
 |-------------|--------|----------|------|
 | 将軍 | Opus | 無効 | 委譲とダッシュボード更新に深い推論は不要 |
 | 家老 | Opus | 有効 | タスク分配には慎重な判断が必要 |
-| 足軽1-4 | Sonnet | 有効 | コスト効率重視の標準タスク向け |
-| 足軽5-8 | Opus | 有効 | 複雑なタスク向けのフル機能 |
+| 足軽 | Sonnet / Opus | 有効 | コスト効率と能力のバランス |
+| 伝令 1-2 | Haiku | 無効 | 単純な中継タスク向け |
 
 将軍は `MAX_THINKING_TOKENS=0` で拡張思考を無効化し、高レベルな判断にはOpusの能力を維持しつつ、レイテンシとコストを削減。
 
 #### 陣形モード
 
-| 陣形 | 足軽1-4 | 足軽5-8 | コマンド |
-|------|---------|---------|---------|
-| **平時の陣**（デフォルト） | Sonnet Thinking | Opus Thinking | `./shutsujin_departure.sh` |
-| **決戦の陣**（全力） | Opus Thinking | Opus Thinking | `./shutsujin_departure.sh -k` |
+| 陣形 | 足軽 | コマンド |
+|------|------|---------|
+| **平時の陣**（デフォルト） | Sonnet Thinking | `./shutsujin_departure.sh` |
+| **決戦の陣**（全力） | Opus Thinking | `./shutsujin_departure.sh -k` |
 
-平時は半数を安いSonnetモデルで運用。ここぞという時に `-k`（`--kessen`）で全軍Opusの「決戦の陣」に切り替え。家老の判断で `/model opus` を送れば、個別の足軽を一時昇格させることも可能。
+平時はSonnetモデルで運用。ここぞという時に `-k`（`--kessen`）で全軍Opusの「決戦の陣」に切り替え。家老の判断で `/model opus` を送れば、個別の足軽を一時昇格させることも可能。
 
 ---
 
@@ -437,7 +468,7 @@ screenshot:
 3. **割り込み防止**: エージェント同士やあなたの入力への割り込みを防止
 4. **デバッグ容易**: 人間がYAMLを直接読んで状況把握できる
 5. **競合回避**: 各足軽に専用ファイルを割り当て
-6. **2秒間隔送信**: 複数足軽への連続送信時に `sleep 2` を挟むことで、入力バッファ溢れを防止（到達率14%→87.5%に改善）
+6. **2秒間隔送信**: 複数足軽への連続送信時に `sleep 2` を挟むことで、入力バッファ溢れを防止
 
 ### エージェント識別（@agent_id）
 
@@ -475,7 +506,14 @@ tmux display-message -t "$TMUX_PANE" -p '#{@agent_id}'
 - 各ユーザの業務・ワークフローは異なる
 - 汎用的なスキルを押し付けるのではなく、ユーザが自分に必要なスキルを育てていく
 
-**2. スキル取得の手順**
+**2. 体制スキルと生成スキル**
+
+| 種類 | 場所 | 内容 |
+|------|------|------|
+| 体制スキル | `skills/*.md` | システム運用に必要な知識（git管理対象） |
+| 生成スキル | `skills/generated/` | 開発PJ由来のスキル（git管理外） |
+
+**3. スキル取得の手順**
 
 ```
 足軽が作業中にパターンを発見
@@ -491,9 +529,25 @@ dashboard.md の「スキル化候補」に上がる
 
 ---
 
+## 🌐 外部エージェント
+
+伝令（Denrei）を介して、Claude以外のAIを召喚可能：
+
+| エージェント | ツール | 役割 | 得意分野 |
+|-------------|--------|------|---------|
+| 🥷 忍び（Shinobi） | Gemini CLI | 諜報・調査 | 100万トークン文脈、ウェブ検索、PDF/動画分析 |
+| 🧠 軍師（Gunshi） | Codex CLI | 参謀・設計 | 深い推論、設計判断、コードレビュー |
+
+**鉄則:**
+- 外部エージェントの召喚は **伝令経由のみ**（直接召喚は禁止行為 F006）
+- 伝令がブロッキングAPIコールを引き受け、指揮系統のレスポンスを維持
+- 足軽は明示的許可（`shinobi_allowed: true`）がある場合のみ召喚可
+
+---
+
 ## 🔌 MCPセットアップガイド
 
-MCP（Model Context Protocol）サーバはClaudeの機能を拡張します。セットアップ方法：
+MCP（Model Context Protocol）サーバはClaudeの機能を拡張します。
 
 ### MCPとは？
 
@@ -549,36 +603,50 @@ claude mcp list
    - 足軽1: GitHub Copilotを調査
    - 足軽2: Cursorを調査
    - 足軽3: Claude Codeを調査
-   - 足軽4: Codeiumを調査
-   - 足軽5: Amazon CodeWhispererを調査
-3. 5体が同時に調査
+   - 伝令1 → 忍び: ウェブ検索で最新情報を収集
+3. 全員が同時に調査
 4. 結果がdashboard.mdに集約
 ```
 
-### 例2: PoC準備
+### 例2: マルチモデル分析
 
 ```
-あなた: 「このNotionページのプロジェクトでPoC準備: [URL]」
+あなた: 「この設計の問題点を多角的に分析せよ」
 
 実行される処理:
-1. 家老がMCP経由でNotionコンテンツを取得
-2. 足軽2: 確認すべき項目をリスト化
-3. 足軽3: 技術的な実現可能性を調査
-4. 足軽4: PoC計画書を作成
-5. 全結果がdashboard.mdに集約、会議の準備完了
+1. 足軽がコードベースを分析
+2. 伝令1 → 忍び: 類似プロジェクトの事例をウェブ検索
+3. 伝令2 → 軍師: アーキテクチャ設計のレビュー
+4. 家老が全結果を統合してdashboard.mdに報告
 ```
 
 ---
 
 ## ⚙️ 設定
 
-### 言語設定
-
-`config/settings.yaml` を編集：
+### config/settings.yaml
 
 ```yaml
-language: ja   # 日本語のみ
-language: en   # 日本語 + 英訳併記
+# 足軽の人数（1-8）
+ashigaru_count: 3
+
+# 言語設定
+language: ja   # ja: 日本語のみ、en: 日本語 + 英訳併記
+
+# 伝令設定
+denrei:
+  max_count: 2
+  model: haiku
+
+# 控え家老（ホットスタンバイ）
+karo_standby:
+  enabled: true
+  model: opus
+
+# 軍師設定
+gunshi:
+  model: gpt-5.2-codex
+  sandbox: read-only
 ```
 
 ---
@@ -613,7 +681,7 @@ language: en   # 日本語 + 英訳併記
 │      │                                                              │
 │      ├──▶ tmuxセッションを作成                                       │
 │      │         • "shogun"セッション（1ペイン）                        │
-│      │         • "multiagent"セッション（9ペイン、3x3グリッド）        │
+│      │         • "multiagent"セッション（エージェント数に応じたペイン）│
 │      │                                                              │
 │      ├──▶ キューファイルとダッシュボードをリセット                     │
 │      │                                                              │
@@ -702,7 +770,7 @@ alias csm='tmux attach-session -t multiagent'  # 家老・足軽ウィンドウ�
 <summary><b>クリックでファイル構成を展開</b></summary>
 
 ```
-multi-agent-shogun/
+multi-agent-bakuhu/
 │
 │  ┌─────────────────── セットアップスクリプト ───────────────────┐
 ├── install.bat               # Windows: 初回セットアップ
@@ -713,19 +781,38 @@ multi-agent-shogun/
 ├── instructions/             # エージェント指示書
 │   ├── shogun.md             # 将軍の指示書
 │   ├── karo.md               # 家老の指示書
-│   └── ashigaru.md           # 足軽の指示書
+│   ├── ashigaru.md           # 足軽の指示書
+│   ├── denrei.md             # 伝令の指示書
+│   ├── shinobi.md            # 忍び（Gemini）連携
+│   └── gunshi.md             # 軍師（Codex）連携
 │
 ├── config/
-│   └── settings.yaml         # 言語その他の設定
+│   ├── settings.yaml         # 言語・エージェント数・モデル設定
+│   └── projects.yaml         # プロジェクト一覧
 │
-├── projects/                # プロジェクト詳細（git対象外、機密情報含む）
-│   └── <project_id>.yaml   # 各プロジェクトの全情報（クライアント、タスク、Notion連携等）
-│
-├── queue/                    # 通信ファイル
+├── queue/                    # 通信ファイル（正データ）
 │   ├── shogun_to_karo.yaml   # 将軍から家老へのコマンド
-│   ├── tasks/                # 各ワーカーのタスクファイル
-│   └── reports/              # ワーカーレポート
+│   ├── tasks/                # 各足軽のタスクファイル
+│   ├── reports/              # 足軽レポート
+│   ├── denrei/               # 伝令のタスク・報告
+│   │   ├── tasks/
+│   │   └── reports/
+│   ├── shinobi/reports/      # 忍びからの調査報告
+│   └── gunshi/reports/       # 軍師からの報告
 │
+├── scripts/                  # 運用ツール
+│   └── extract-section.sh    # マークダウンセクション抽出（bash+awk）
+│
+├── skills/                   # スキル定義
+│   ├── context-health.md     # /compact テンプレート・混合戦略
+│   ├── shinobi-manual.md     # 忍び召喚ガイド
+│   ├── architecture.md       # システムアーキテクチャ詳細
+│   └── generated/            # 運用中に生成されたスキル
+│
+├── templates/                # エージェント用YAMLテンプレート
+├── context/                  # プロジェクト固有コンテキスト
+├── logs/archive/             # 退避済みコマンド・レポート・ダッシュボード履歴
+├── projects/                 # プロジェクト詳細（git対象外、機密情報含む）
 ├── memory/                   # Memory MCP保存場所
 ├── dashboard.md              # リアルタイム状況一覧
 └── CLAUDE.md                 # Claude用プロジェクトコンテキスト
@@ -744,10 +831,12 @@ multi-agent-shogun/
 ```
 config/projects.yaml          # プロジェクト一覧（ID・名前・パス・ステータスのみ）
 projects/<project_id>.yaml    # 各プロジェクトの詳細情報
+context/<project_id>.md       # プロジェクト固有コンテキスト（足軽に読ませる）
 ```
 
 - **`config/projects.yaml`**: どのプロジェクトがあるかの一覧（サマリのみ）
 - **`projects/<id>.yaml`**: そのプロジェクトの全詳細（クライアント情報、契約、タスク、関連ファイル、Notionページ等）
+- **`context/<id>.md`**: 足軽がタスク着手時に読み込むプロジェクト固有の知識
 - **プロジェクトの実ファイル**（ソースコード、設計書等）は `path` で指定した外部フォルダに配置
 - **`projects/` はGit追跡対象外**（クライアントの機密情報を含むため）
 
@@ -869,7 +958,7 @@ tmux respawn-pane -t shogun:0.0 -k 'claude --model opus --dangerously-skip-permi
 
 ## 🙏 クレジット
 
-[Claude-Code-Communication](https://github.com/Akira-Papa/Claude-Code-Communication) by Akira-Papa をベースに開発。
+[Claude-Code-Communication](https://github.com/Akira-Papa/Claude-Code-Communication) by Akira-Papa をベースに、[multi-agent-shogun](https://github.com/yohey-w/multi-agent-shogun) by yohey-w を経て開発。
 
 ---
 
