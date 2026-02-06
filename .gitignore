@@ -9,8 +9,8 @@ claude-shogun-orders.md
 # Test outputs (generated during testing)
 test_output/
 
-# Generated skills (local development)
-# skills/ is now tracked — contains CLAUDE.md separated reference docs
+# Generated skills (project-specific, not tracked)
+skills/generated/
 
 # Temporary files
 *.tmp
