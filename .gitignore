@@ -10,7 +10,7 @@ claude-shogun-orders.md
 test_output/
 
 # Generated skills (local development)
-skills/
+# skills/ is now tracked — contains CLAUDE.md separated reference docs
 
 # Temporary files
 *.tmp

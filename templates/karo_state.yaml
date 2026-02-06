@@ -1,0 +1,30 @@
+# 家老状態引き継ぎファイル（ホットスタンバイ交代用）
+# 主家老が /clear 前に記入し、控え家老が引き継ぎ時に読む
+
+handoff:
+  timestamp: ""
+  reason: "context_exhaustion"  # context_exhaustion / error / manual
+  compact_count: 0
+
+# 現在進行中のcmd
+active_commands:
+  - cmd_id: null
+    status: null  # pending / in_progress / done
+    description: null
+
+# 各足軽の状態
+ashigaru_status:
+  ashigaru1: idle    # idle / assigned / working
+  ashigaru2: idle
+  ashigaru3: idle
+
+# 各伝令の状態
+denrei_status:
+  denrei1: idle
+  denrei2: idle
+
+# 未処理の報告（dashboard未反映）
+pending_reports: []
+
+# 備考（引き継ぎ時の注意事項）
+notes: ""

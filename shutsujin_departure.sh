@@ -46,6 +46,15 @@ if [ -f "./config/settings.yaml" ]; then
     fi
 fi
 
+# 控え家老の設定を読み取り（デフォルト: false）
+KARO_STANDBY=false
+if [ -f "./config/settings.yaml" ]; then
+    KARO_STANDBY_SETTING=$(yq eval '.karo_standby.enabled' ./config/settings.yaml 2>/dev/null || echo "false")
+    if [ "$KARO_STANDBY_SETTING" = "true" ]; then
+        KARO_STANDBY=true
+    fi
+fi
+
 # 色付きログ関数（戦国風）
 log_info() {
     echo -e "\033[1;33m【報】\033[0m $1"
@@ -346,6 +355,11 @@ result: null
 EOF
     done
 
+    # 家老状態ファイルリセット（ホットスタンバイ用）
+    if [ "$KARO_STANDBY" = true ]; then
+        cp ./templates/karo_state.yaml ./queue/karo_state.yaml 2>/dev/null || true
+    fi
+
     # キューファイルリセット
     cat > ./queue/shogun_to_karo.yaml << 'EOF'
 queue: []
@@ -483,7 +497,11 @@ PANE_BASE=$(tmux show-options -gv pane-base-index 2>/dev/null || echo 0)
 # ═══════════════════════════════════════════════════════════════════════════════
 # STEP 5.1: multiagent セッション作成（karo + ashigaru1-N + denrei1-M）
 # ═══════════════════════════════════════════════════════════════════════════════
-TOTAL_PANES=$((1 + ASHIGARU_COUNT + DENREI_COUNT))  # karo + 足軽 + 伝令
+KARO_STANDBY_COUNT=0
+if [ "$KARO_STANDBY" = true ]; then
+    KARO_STANDBY_COUNT=1
+fi
+TOTAL_PANES=$((1 + KARO_STANDBY_COUNT + ASHIGARU_COUNT + DENREI_COUNT))  # karo + 控え家老 + 足軽 + 伝令
 log_war "⚔️ 家老・足軽・伝令の陣を構築中（${TOTAL_PANES}名配備）..."
 
 # 最初のペイン作成
@@ -519,6 +537,15 @@ PANE_COLORS=("red")
 AGENT_IDS=("karo")
 MODEL_NAMES=("Opus Thinking")
 
+# 控え家老（ホットスタンバイ）
+if [ "$KARO_STANDBY" = true ]; then
+    PANE_LABELS+=("karo_standby")
+    PANE_TITLES+=("karo_standby(Opus)")
+    PANE_COLORS+=("red")
+    AGENT_IDS+=("karo_standby")
+    MODEL_NAMES+=("Opus Thinking")
+fi
+
 for i in $(seq 1 $ASHIGARU_COUNT); do
     PANE_LABELS+=("ashigaru${i}")
     PANE_COLORS+=("blue")
@@ -548,7 +575,7 @@ for i in $(seq 1 $DENREI_COUNT); do
     MODEL_NAMES+=("Haiku")
 done
 
-TOTAL_AGENTS=$((ASHIGARU_COUNT + DENREI_COUNT))
+TOTAL_AGENTS=$((TOTAL_PANES - 1))  # 0-indexed: karo + karo_standby(optional) + ashigaru + denrei
 for i in $(seq 0 $TOTAL_AGENTS); do
     p=$((PANE_BASE + i))
     tmux select-pane -t "multiagent:agents.${p}" -T "${PANE_TITLES[$i]}"
@@ -593,10 +620,21 @@ if [ "$SETUP_ONLY" = false ]; then
     tmux send-keys -t "multiagent:agents.${p}" Enter
     log_info "  └─ 家老（Opus Thinking）、召喚完了"
 
+    # 控え家老（ホットスタンバイ）
+    if [ "$KARO_STANDBY" = true ]; then
+        p=$((PANE_BASE + 1))
+        tmux send-keys -t "multiagent:agents.${p}" "claude --model opus --dangerously-skip-permissions"
+        tmux send-keys -t "multiagent:agents.${p}" Enter
+        log_info "  └─ 控え家老（Opus Thinking）、待機配備完了"
+    fi
+
+    # 足軽のペインオフセット（控え家老がいる場合は +1）
+    ASHIGARU_OFFSET=$((1 + KARO_STANDBY_COUNT))
+
     if [ "$KESSEN_MODE" = true ]; then
         # 決戦の陣: 全足軽 Opus Thinking
         for i in $(seq 1 $ASHIGARU_COUNT); do
-            p=$((PANE_BASE + i))
+            p=$((PANE_BASE + ASHIGARU_OFFSET + i - 1))
             tmux send-keys -t "multiagent:agents.${p}" "claude --model opus --dangerously-skip-permissions"
             tmux send-keys -t "multiagent:agents.${p}" Enter
         done
@@ -605,7 +643,7 @@ if [ "$SETUP_ONLY" = false ]; then
         # 平時の陣: 足軽1-4=Sonnet, 足軽5以上=Opus
         SONNET_MAX=$((ASHIGARU_COUNT < 4 ? ASHIGARU_COUNT : 4))
         for i in $(seq 1 $SONNET_MAX); do
-            p=$((PANE_BASE + i))
+            p=$((PANE_BASE + ASHIGARU_OFFSET + i - 1))
             tmux send-keys -t "multiagent:agents.${p}" "claude --model sonnet --dangerously-skip-permissions"
             tmux send-keys -t "multiagent:agents.${p}" Enter
         done
@@ -615,7 +653,7 @@ if [ "$SETUP_ONLY" = false ]; then
 
         if [ "$ASHIGARU_COUNT" -gt 4 ]; then
             for i in $(seq 5 $ASHIGARU_COUNT); do
-                p=$((PANE_BASE + i))
+                p=$((PANE_BASE + ASHIGARU_OFFSET + i - 1))
                 tmux send-keys -t "multiagent:agents.${p}" "claude --model opus --dangerously-skip-permissions"
                 tmux send-keys -t "multiagent:agents.${p}" Enter
             done
@@ -623,9 +661,10 @@ if [ "$SETUP_ONLY" = false ]; then
         fi
     fi
 
-    # 伝令（pane 9, 10）: Haiku
+    # 伝令: Haiku
+    DENREI_OFFSET=$((ASHIGARU_OFFSET + ASHIGARU_COUNT))
     for i in $(seq 1 $DENREI_COUNT); do
-        p=$((PANE_BASE + ASHIGARU_COUNT + i))
+        p=$((PANE_BASE + DENREI_OFFSET + i - 1))
         tmux send-keys -t "multiagent:agents.${p}" "claude --model haiku --dangerously-skip-permissions"
         tmux send-keys -t "multiagent:agents.${p}" Enter
     done
@@ -745,23 +784,33 @@ NINJA_EOF
     sleep 0.5
     tmux send-keys -t "multiagent:agents.${PANE_BASE}" Enter
 
-    # 足軽に指示書を読み込ませる
+    # 控え家老に指示書を読み込ませる（ホットスタンバイ）
+    if [ "$KARO_STANDBY" = true ]; then
+        sleep 2
+        p=$((PANE_BASE + 1))
+        log_info "  └─ 控え家老に指示書を伝達中..."
+        tmux send-keys -t "multiagent:agents.${p}" "instructions/karo.md を読んで役割を理解せよ。汝は控え家老（ホットスタンバイ）である。主家老が過労で倒れた際に引き継ぐ役目じゃ。指示があるまで待機せよ。"
+        sleep 0.5
+        tmux send-keys -t "multiagent:agents.${p}" Enter
+    fi
+
+    # 足軽に指示書を読み込ませる（ASHIGARU_OFFSETを使用）
     sleep 2
     log_info "  └─ 足軽に指示書を伝達中..."
     for i in $(seq 1 $ASHIGARU_COUNT); do
-        p=$((PANE_BASE + i))
+        p=$((PANE_BASE + ASHIGARU_OFFSET + i - 1))
         tmux send-keys -t "multiagent:agents.${p}" "instructions/ashigaru.md を読んで役割を理解せよ。汝は足軽${i}号である。"
         sleep 0.3
         tmux send-keys -t "multiagent:agents.${p}" Enter
         sleep 0.5
     done
 
-    # 伝令に指示書を読み込ませる
+    # 伝令に指示書を読み込ませる（DENREI_OFFSETを使用）
     if [ "$DENREI_COUNT" -gt 0 ]; then
         sleep 2
         log_info "  └─ 伝令に指示書を伝達中..."
         for i in $(seq 1 $DENREI_COUNT); do
-            p=$((PANE_BASE + ASHIGARU_COUNT + i))
+            p=$((PANE_BASE + DENREI_OFFSET + i - 1))
             tmux send-keys -t "multiagent:agents.${p}" "instructions/denrei.md を読んで役割を理解せよ。汝は伝令${i}号である。"
             sleep 0.3
             tmux send-keys -t "multiagent:agents.${p}" Enter
@@ -769,7 +818,11 @@ NINJA_EOF
         done
     fi
 
-    log_success "✅ 全軍に指示書伝達完了（足軽${ASHIGARU_COUNT}名、伝令${DENREI_COUNT}名）"
+    if [ "$KARO_STANDBY" = true ]; then
+        log_success "✅ 全軍に指示書伝達完了（控え家老1名、足軽${ASHIGARU_COUNT}名、伝令${DENREI_COUNT}名）"
+    else
+        log_success "✅ 全軍に指示書伝達完了（足軽${ASHIGARU_COUNT}名、伝令${DENREI_COUNT}名）"
+    fi
     echo ""
 fi
 
@@ -795,6 +848,9 @@ echo ""
 echo "     【multiagentセッション】家老・足軽・伝令の陣（計${TOTAL_PANES}ペイン）"
 echo "     ┌─────────────────────────────┐"
 echo "     │  karo (家老) - タスク管理    │"
+if [ "$KARO_STANDBY" = true ]; then
+echo "     │  karo_standby (控え家老)     │  ← ホットスタンバイ"
+fi
 echo "     ├─────────────────────────────┤"
 for i in $(seq 1 $ASHIGARU_COUNT); do
     echo "     │  ashigaru${i} (足軽${i})         │"

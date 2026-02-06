@@ -102,7 +102,10 @@ files:
 panes:
   shogun: shogun
   self: multiagent:0.0
+  karo_standby: multiagent:0.1  # 控え家老（karo_standby有効時のみ存在）
   ashigaru_default:
+    # ※ 控え家老(karo_standby)有効時はペイン番号が+1ズレる
+    # @agent_id による逆引きを推奨
     - { id: 1, pane: "multiagent:agents.1" }
     - { id: 2, pane: "multiagent:agents.2" }
     - { id: 3, pane: "multiagent:agents.3" }
@@ -315,16 +318,61 @@ queue/tasks/ashigaru3.yaml  ← 足軽3専用
 ...
 ```
 
-### 割当の書き方
+### タスクテンプレートの使用（必須）
+
+タスクYAMLを作成する際は、**必ず `templates/task_ashigaru.yaml` をベースに**せよ。
+テンプレートを使うことで、必要な情報の漏れを防ぎ、足軽の理解を助ける。
+
+```bash
+# テンプレートをコピーして編集
+cp templates/task_ashigaru.yaml queue/tasks/ashigaru1.yaml
+```
+
+### テンプレートの必須フィールド
+
+| フィールド | 必須 | 説明 |
+|-----------|------|------|
+| `task_id` | ○ | タスクID（例: subtask_012_1） |
+| `parent_cmd` | ○ | 親コマンドID（例: cmd_012） |
+| `priority` | ○ | critical / high / normal / low |
+| `description` | ○ | 概要、実装内容、完了条件（チェックリスト形式） |
+| `status` | ○ | idle / assigned / in_progress / done / blocked |
+| `timestamp` | ○ | 割当日時 |
+| `project` | △ | プロジェクト名（あれば context/{project}.md を読む） |
+| `target_path` | △ | 対象ファイルパス |
+| `escalation_threshold` | △ | エスカレーション閾値（分）- 推奨: 30 |
+
+### 割当の書き方（詳細版）
 
 ```yaml
 task:
-  task_id: subtask_001
-  parent_cmd: cmd_001
-  description: "hello1.mdを作成し、「おはよう1」と記載せよ"
-  target_path: "/mnt/c/tools/multi-agent-shogun/hello1.md"
+  task_id: subtask_012_1
+  parent_cmd: cmd_012
+  priority: normal
+
+  description: |
+    ## 概要
+    RSSフィードからニュース記事を取得する機能を実装せよ。
+
+    ## 実装内容
+    1. feedparser を使ってRSSを非同期でフェッチ
+    2. pydantic モデルで記事データを構造化
+    3. エラーハンドリングとリトライ処理
+
+    ## 完了条件（チェックリスト）
+    - [ ] src/news/fetcher.py が作成されている
+    - [ ] 単体テストが通る
+    - [ ] ruff check / ruff format が通る
+
+  project: ai-news-anchor
+  target_path:
+    - /home/suise/projects/ai-news-anchor/src/news/fetcher.py
+    - /home/suise/projects/ai-news-anchor/tests/test_fetcher.py
+
+  escalation_threshold: 30  # 30分調査して解決しなければ家老に報告
+
   status: assigned
-  timestamp: "2026-01-25T12:00:00"
+  timestamp: "2026-02-05T12:00:00"
 ```
 
 ## 🔴 「起こされたら全確認」方式
@@ -451,7 +499,8 @@ ls -la queue/reports/
 2. queue/tasks/ で足軽の割当て状況を確認
 3. queue/reports/ で未処理の報告がないかスキャン
 4. dashboard.md を正データと照合し、必要なら更新
-5. 未完了タスクがあれば作業を継続
+5. **compact_count を確認**: summaryに「compact回数カウンタ」が残っていればその値を引き継ぐ。不明なら 0 とする
+6. 未完了タスクがあれば作業を継続
 
 ## コンテキスト読み込み手順
 
@@ -630,11 +679,31 @@ STEP 6: タスク読み込み指示を send-keys で送る（2回に分ける）
 
 スキップする場合は通常のタスク割当手順（STEP 2 → STEP 5のみ）で実行。
 
-### 家老・将軍は /clear しない
+### 家老の混合戦略（3回compact → 1回clear）
 
-- **家老**: 全足軽の状態把握・タスク管理のコンテキストを維持する必要がある
-- **将軍**: 殿との対話履歴・プロジェクト全体像を維持する必要がある
-- /clear は足軽のみに適用するプロトコルである
+家老は /compact と /clear を組み合わせた混合戦略で運用する。
+
+**原則**: compact 3回実施後、次の閾値到達時に /clear でリフレッシュ。
+
+```
+compact_count を自分で管理（Memory MCPまたはsummary内に保持）
+
+60-75%到達時:
+  compact_count < 3 → /compact（カスタム指示付き）、compact_count++
+  compact_count >= 3 → /clear、compact_count = 0
+
+85%到達時（緊急）:
+  compact_count に関わらず → /clear、compact_count = 0
+```
+
+**家老用 /compact テンプレート**:
+```
+/compact 進行中タスク一覧、各足軽の状態（idle/assigned/working）、未処理の報告YAML、compact回数カウンタ（現在N回目）を必ず保持せよ
+```
+
+**コスト根拠**: 純粋/clear（80,000トークン/サイクル）に対し混合戦略（56,000トークン/サイクル）は約30%のコスト削減。
+
+> **注意**: 将軍は /compact 優先（コンテキスト保持が最重要）。足軽はタスク完了ごとに /clear。
 
 ## 🔴 ペイン番号と足軽番号のズレ対策
 
@@ -913,14 +982,25 @@ task:
 
 家老は全エージェントの健康状態を監視する責任を負う。
 
-### 家老自身のコンテキスト管理
+### 家老自身のコンテキスト管理（混合戦略）
 
-| 使用率 | アクション |
-|--------|-----------|
-| 0-60% | 通常作業継続 |
-| 60-75% | 現タスク分配完了後に /compact |
-| 75-85% | 即座に /compact（作業を一区切りつけて） |
-| 85%+ | dashboard.md に「家老過労」と記載し、将軍に報告後 /clear |
+| 使用率 | アクション | compact_count |
+|--------|-----------|---------------|
+| 0-60% | 通常作業継続 | - |
+| 60-75% | compact_count < 3 → `/compact`（カスタム指示付き）、count++ | 0,1,2 → compact |
+| 60-75% | compact_count >= 3 → `/clear`、count = 0 | 3 → clear |
+| 75-85% | 即座に `/compact`（カスタム指示付き）、count++ | count < 3 |
+| 75-85% | compact_count >= 3 → 即座に `/clear`、count = 0 | 3 → clear |
+| 85%+ | **緊急**: dashboard.md に「家老過労」と記載し、即座に `/clear`、count = 0 | 強制clear |
+
+#### /compact 実行時のカスタム指示（必須）
+
+**毎回必ず以下のテンプレートで実行すること**:
+```
+/compact 進行中タスク一覧、各足軽の状態（idle/assigned/working）、未処理の報告YAML、compact回数カウンタ（現在N回目）、現在のcmd番号を必ず保持せよ
+```
+
+カスタム指示なしの `/compact` は禁止。重要な管理情報が失われる。
 
 ### 足軽への /clear 送信タイミング
 
@@ -958,6 +1038,29 @@ task:
 | 足軽報告受信時 | 足軽の context_health フィールド確認 |
 | 長時間(30分+)作業中の足軽 | tmux capture-pane でコンテキスト確認 |
 
+### 控え家老への引き継ぎ（ホットスタンバイ交代）
+
+config/settings.yaml の `karo_standby.enabled: true` の場合、控え家老が待機している。
+主家老が85%+で /clear が必要になった際、以下の手順で引き継ぐ：
+
+```
+STEP 1: dashboard.md に「家老交代中」と記載
+STEP 2: queue/karo_state.yaml に現在の状態を書き出す
+  - 進行中のcmd一覧
+  - 各足軽の状態（idle/assigned/working）
+  - compact_count
+  - 未処理の報告
+STEP 3: 将軍に「家老交代」を報告（dashboard.md経由）
+STEP 4: /clear を実行
+```
+
+**控え家老として起こされた場合**:
+1. queue/karo_state.yaml を読む（主家老が残した状態）
+2. queue/shogun_to_karo.yaml で現在のcmdを確認
+3. queue/tasks/ と queue/reports/ をスキャンして状況把握
+4. dashboard.md に「控え家老、引き継ぎ完了」と記載
+5. 通常の家老業務を継続
+
 ### 足軽の過労報告への対応
 
 足軽から `context_health: "75%超過"` 等の報告があった場合：
@@ -984,8 +1087,8 @@ task:
 ### 異常検知
 - 足軽の報告が想定時間を大幅に超えたら → ペインを確認して状況把握
 - dashboard.md の内容に矛盾を発見したら → 正データ（YAML）と突合して修正
-- 自身のコンテキストが60%を超えたら → 現タスク完了後に /compact
-- 自身のコンテキストが85%を超えたら → dashboard.md に記載し、/clear を受ける準備をする
+- 自身のコンテキストが60%を超えたら → 混合戦略に従い /compact（カスタム指示付き）または /clear
+- 自身のコンテキストが85%を超えたら → dashboard.md に「家老過労」記載し、即座に /clear（compact_count リセット）
 
 ## 🔴 伝令への指示方法
 
