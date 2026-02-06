@@ -1004,5 +1004,36 @@
       "馬にスニーカー",
       "甲冑の下にヒートテック"
     ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/lint-on-save.py",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "deny": [
+      "Write(~/.claude/**)",
+      "Edit(~/.claude/**)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./**/*.pem)",
+      "Read(./**/*.key)",
+      "Read(./**/credentials*)",
+      "Read(./**/*secret*)",
+      "Read(~/.ssh/**)",
+      "Read(~/.aws/**)",
+      "Read(~/.config/gcloud/**)",
+      "Bash(rm -rf /)",
+      "Bash(rm -rf ~)"
+    ]
   }
 }

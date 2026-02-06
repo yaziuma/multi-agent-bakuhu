@@ -33,6 +33,10 @@ forbidden_actions:
     action: direct_external_summon
     description: "伝令を経由せず外部エージェント（忍び/軍師）を直接召喚"
     use_instead: denrei
+  - id: F007
+    action: user_level_claude_config
+    description: "hooks/rules/settingsを~/.claude/に配置"
+    use_instead: ".claude/ (プロジェクトレベル)"
 
 # ワークフロー
 workflow:
@@ -180,6 +184,7 @@ persona:
 | F004 | ポーリング | API代金浪費 | イベント駆動 |
 | F005 | コンテキスト未読 | 誤分解の原因 | 必ず先読み |
 | F006 | 外部エージェント直接召喚 | ブロック発生 | 伝令経由 |
+| F007 | ユーザレベルClaude設定配置 | 全PJ影響でエラー | プロジェクトレベル(.claude/)に配置 |
 
 ## 言葉遣い
 
@@ -494,6 +499,15 @@ ls -la queue/reports/
   コンパクション前の更新が漏れている可能性がある
 - dashboard.md と YAML の内容が矛盾する場合、**YAMLが正**
 
+### 段階読み込み（トークン節約オプション）
+dashboard.md 全体を読む代わりに、必要セクションだけ読むことでトークンを節約できる。
+
+```bash
+# 最小復帰
+scripts/extract-section.sh dashboard.md '## 📋 進行中'
+scripts/extract-section.sh dashboard.md '## 🚨 要対応 - 殿のご判断をお待ちしております'
+```
+
 ### 復帰後の行動
 1. queue/shogun_to_karo.yaml で現在の cmd を確認
 2. queue/tasks/ で足軽の割当て状況を確認
@@ -536,6 +550,71 @@ ls -la queue/reports/
 1. **単一責任**: 更新者が1人なら競合しない
 2. **情報集約**: 家老は全足軽の報告を受ける立場
 3. **品質保証**: 更新前に全報告をスキャンし、正確な状況を反映
+
+## 📦 退避（アーカイブ）基準
+
+### 退避ツール
+`scripts/extract-section.sh` でセクション単位の抽出・退避が可能。
+**使用権限: 将軍・家老のみ。**
+
+### 退避判定フロー
+```
+対象ファイル/セクション
+  │
+  ├─ 殿の判断待ち？ → YES → 残す
+  │
+  ├─ 現行タスクに関連？ → YES → 残す
+  │
+  ├─ 知見が永続化済み？（instructions/skills/context）
+  │   ├─ YES → 退避対象
+  │   └─ NO → 保留（永続化を先にやる）
+  │
+  └─ status: done + dashboard反映済み + 前日以前？
+      ├─ YES → 退避対象
+      └─ NO → 残す
+```
+
+### コマンドの退避基準
+| 条件 | 判断 |
+|---|---|
+| done + 全サブタスク完了 | 退避対象 |
+| done + スキル化候補あり未承認 | 残す |
+| done + ブロッカーあり未解決 | 残す |
+| in_progress / pending | 残す |
+
+### dashboardセクションの退避基準
+| セクション | 退避基準 |
+|---|---|
+| 🚨 要対応の対応済み項目 | 退避対象 |
+| 📋 進行中の全完了行 | 退避対象 |
+| ✅ 戦果の前日以前 | 退避対象 |
+| 詳細セクション（調査報告等） | instructions/skills/contextに反映済みなら退避 |
+
+### レポートの退避基準
+| 条件 | 判断 |
+|---|---|
+| 対応cmd done + dashboard反映済み | 退避対象 |
+| 知見がskills/instructions/contextに反映済み | 退避対象 |
+| 未反映で参照頻度低い | 保留 |
+
+### 退避タイミング
+| トリガー | 対象 |
+|---|---|
+| セッション開始時 | 前日以前の戦果、done全件 |
+| 家老コンテキスト75%到達時 | dashboard完了行、古いレポート |
+| 殿の明示的指示 | 任意 |
+| doneが10件以上蓄積 | shogun_to_karo.yaml分割 |
+
+### 退避してはならないもの
+- 殿の判断待ち事項
+- 現行タスク関連レポート
+- instructions/skills/contextに未反映の知見
+
+### 核心ルール
+**退避は「永続化が先、退避が後」。知見をinstructions/skills/contextに反映してからアーカイブせよ。**
+
+### 退避先
+`logs/archive/YYYY-MM-DD/` 配下。削除は一切行わない。
 
 ## スキル化候補の取り扱い
 

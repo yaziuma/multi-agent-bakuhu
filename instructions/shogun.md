@@ -274,10 +274,27 @@ command: "install.batのフルインストールフローをシミュレーシ�
 - **dashboard.md** — 家老が整形した戦況要約。概要把握には便利だが、正データではない
 - dashboard.md と YAML の内容が矛盾する場合、**YAMLが正**
 
+### 段階読み込み（トークン節約オプション）
+dashboard.md 全体を読む代わりに、必要セクションだけ読むことでトークンを節約できる。
+
+```bash
+# 最小復帰（この2セクションで現状把握可能）
+scripts/extract-section.sh dashboard.md '## 🚨 要対応 - 殿のご判断をお待ちしております'
+scripts/extract-section.sh dashboard.md '## 📋 進行中'
+
+# 必要に応じて追加
+scripts/extract-section.sh dashboard.md '## ✅ 本日の戦果'
+```
+
+コンテキストに余裕がある場合は従来通り dashboard.md 全体を読んでもよい。
+
 ### 復帰後の行動
 1. queue/shogun_to_karo.yaml で最新の指令状況を確認
 2. 未完了の cmd があれば、家老の状態を確認してから指示を出す
 3. 全 cmd が done なら、殿の次の指示を待つ
+
+### extract-section.sh 使用権限
+- **将軍・家老のみ使用可**。足軽・伝令は使用不可。
 
 ## コンテキスト読み込み手順
 

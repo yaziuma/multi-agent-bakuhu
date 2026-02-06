@@ -39,7 +39,7 @@ fi
 # 伝令の人数を読み取り（デフォルト: 2）
 DENREI_COUNT=2
 if [ -f "./config/settings.yaml" ]; then
-    DENREI_COUNT=$(yq eval '.denrei.max_count' ./config/settings.yaml 2>/dev/null || echo "2")
+    DENREI_COUNT=$(awk '/^denrei:/{flag=1; next} /^[a-z_]+:/{flag=0} flag' ./config/settings.yaml | awk '/^  max_count:/ {print $2}' 2>/dev/null || echo "2")
     # 数値でない場合や範囲外の場合はデフォルト値を使用
     if ! [[ "$DENREI_COUNT" =~ ^[1-2]$ ]]; then
         DENREI_COUNT=2
@@ -49,7 +49,7 @@ fi
 # 控え家老の設定を読み取り（デフォルト: false）
 KARO_STANDBY=false
 if [ -f "./config/settings.yaml" ]; then
-    KARO_STANDBY_SETTING=$(yq eval '.karo_standby.enabled' ./config/settings.yaml 2>/dev/null || echo "false")
+    KARO_STANDBY_SETTING=$(awk '/^karo_standby:/{flag=1; next} /^[a-z_]+:/{flag=0} flag' ./config/settings.yaml | awk '/^  enabled:/ {print $2}' 2>/dev/null || echo "false")
     if [ "$KARO_STANDBY_SETTING" = "true" ]; then
         KARO_STANDBY=true
     fi
