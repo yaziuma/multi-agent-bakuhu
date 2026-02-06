@@ -1,0 +1,72 @@
+# 軍師2専用タスクファイル
+request:
+  request_id: gunshi_023_python
+  parent_cmd: cmd_023
+  timestamp: "2026-02-05T21:00:00"
+  requester: shogun
+  type: tradeoff_evaluation
+
+  query: |
+    【調査5】Python導入による効率化の技術評価
+
+    ## 背景
+    現行の multi-agent-bakuhu は以下に依存している：
+    - Claude Code CLI
+    - Linux コマンド（tmux, bash, inotifywait等）
+    - YAML ファイルによる通信
+
+    Python を導入することで効率化できる領域があるかを評価せよ。
+
+    ## 評価対象領域
+
+    ### A. タスクキュー管理
+    - 現状: YAML ファイル + tmux send-keys
+    - Python化: asyncio / celery / redis queue
+
+    ### B. ファイル監視と自動処理
+    - 現状: inotifywait + bash スクリプト
+    - Python化: watchdog ライブラリ
+
+    ### C. エージェント間通信
+    - 現状: tmux send-keys + YAML
+    - Python化: ZeroMQ / gRPC / WebSocket
+
+    ### D. 状態管理・ダッシュボード
+    - 現状: dashboard.md (手動更新)
+    - Python化: FastAPI + リアルタイム更新
+
+    ### E. 外部エージェント召喚
+    - 現状: gemini CLI / codex CLI を bash から呼び出し
+    - Python化: API 直接呼び出し（gemini SDK / openai SDK）
+
+    ## 評価観点
+
+    各領域について以下を評価せよ：
+
+    1. **現状の課題**: 現行方式の問題点
+    2. **Python化のメリット**: 導入による改善点
+    3. **Python化のデメリット**: 導入によるリスク・複雑性
+    4. **トレードオフ**: 導入コスト vs 得られる効果
+    5. **推奨**: 導入すべきか（○/△/×）と理由
+    6. **実装難易度**: 低/中/高
+
+    ## 制約条件
+
+    - Claude Code は Bash 経由でのコマンド実行が可能
+    - Python スクリプトは Claude Code が直接実行可能
+    - 過度な複雑性は避けるべき（保守性重視）
+    - 現行システムとの互換性を維持
+
+  context:
+    project: multi-agent-bakuhu
+    current_stack:
+      - tmux
+      - bash
+      - yaml
+      - claude-code
+      - gemini-cli
+      - codex-cli
+
+  output_format: markdown
+  max_tokens: 3000
+  status: assigned

@@ -1,31 +1,31 @@
 worker_id: denrei1
-task_id: denrei_022_kokoro_full
-timestamp: "2026-02-05T19:47:27"
+task_id: denrei_gunshi_cmd054b
+parent_cmd: cmd_054
+priority: high
+timestamp: "2026-02-06T15:00:23"
 status: done
 result:
-  summary: "【緊急調査完了】Kokoro TTS API 正確な仕様確認"
-  external_agent: shinobi
-  output_file: "queue/shinobi/reports/report_cmd_022_kokoro_full.md"
+  summary: "軍師（Codex）によるMarkdownセクション抽出スクリプト（awk版）設計完了"
+  external_agent: gunshi
+  output_file: "queue/gunshi/reports/report_cmd_054_md_section_extract_awk.md"
   notes: |
-    【重要な誤り発見と修正】
-    ✅ 正確なAPI確認完了（前回調査は誤りあり）
+    Markdownセクション抽出スクリプトのawk版設計を完了。
+    （Python版は却下、Linux標準ツール（bash+awk）での実装）
 
-    【修正内容】
-    - lang_code='j' を使用（lang='ja' ではない）
-    - __call__() メソッドが正式API（.tts() は存在しない）
-    - pipeline() はジェネレータを返す
-    - 出力: (graphemes, phonemes, audio_tensor) のタプル
-    - sample_rate 固定: 24000 Hz
+    ## 成果物
+    - 完全なbashスクリプト（awk解析ロジック使用）
+    - 使用例の提示
+    - エッジケース対応の記述
 
-    【必須依存パッケージ】
-    - kokoro, soundfile, torch
-    - misaki[ja] (fugashi, ipadic, pyopenjtalk含む)
-    - espeak-ng (システムパッケージ)
+    ## 主要機能
+    1. 指定見出しの自動検索
+    2. 同レベル以上の次の見出しまでを抽出
+    3. 子見出しの包含（例: ## を指定すれば ### も含まれる）
+    4. --- は通常テキストとして扱う
+    5. 見出しレベルは # の数で判定
 
-    【推奨音声】
-    - 女性: jf_alpha, jf_gongitsune, jf_nezumi, jf_tebukuro
-    - 男性: jm_kumo
-
-    【作業コード完全実装例あり】
-    - 完全な Python スクリプト例（テキスト→WAV保存まで）
-    - インポート、初期化、処理フロー全記載
+    ## 実装詳細
+    - bash + awk のみ使用（POSIX互換）
+    - 外部パッケージ不要
+    - heading_level() 関数で見出しレベル判定
+    - エッジケース対応：見出し未検出、EOF、Unicode/絵文字
