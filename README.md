@@ -4,11 +4,13 @@
 
 **Command your AI army like a feudal warlord.**
 
-Run multiple AI coding agents in parallel — orchestrated through a samurai-inspired hierarchy with zero coordination overhead.
+Run multiple AI coding agents in parallel — **Claude Code, OpenAI Codex, GitHub Copilot, Kimi Code** — orchestrated through a samurai-inspired hierarchy with zero coordination overhead.
+
+**Talk Coding, not Vibe Coding. Speak to your phone, AI executes.**
 
 [![GitHub Stars](https://img.shields.io/github/stars/yaziuma/multi-agent-bakuhu?style=social)](https://github.com/yaziuma/multi-agent-bakuhu)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Claude Code](https://img.shields.io/badge/Built_for-Claude_Code-blueviolet)](https://code.claude.com)
+[![v3.0 Multi-CLI](https://img.shields.io/badge/v3.0-Multi--CLI_Support-ff6600?style=flat-square&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiI+PHRleHQgeD0iMCIgeT0iMTIiIGZvbnQtc2l6ZT0iMTIiPuKalTwvdGV4dD48L3N2Zz4=)](https://github.com/yaziuma/multi-agent-bakuhu)
 [![Shell](https://img.shields.io/badge/Shell%2FBash-100%25-green)]()
 
 [English](README.md) | [日本語](README_ja.md)
@@ -19,7 +21,7 @@ Run multiple AI coding agents in parallel — orchestrated through a samurai-ins
 
 ## What is this?
 
-**multi-agent-bakuhu** is a system that runs multiple AI coding CLI instances simultaneously, orchestrating them like a feudal Japanese army.
+**multi-agent-bakuhu** is a system that runs multiple AI coding CLI instances simultaneously, orchestrating them like a feudal Japanese army. Supports **Claude Code**, **OpenAI Codex**, **GitHub Copilot**, and **Kimi Code**.
 
 **Why use it?**
 - One command spawns multiple AI workers executing in parallel
@@ -45,7 +47,7 @@ Run multiple AI coding agents in parallel — orchestrated through a samurai-ins
     ASHIGARU DENREI EXTERNAL
 ```
 
-> Forked from [yohey-w/multi-agent-shogun](https://github.com/yohey-w/multi-agent-shogun). Extensively redesigned with external agent integration, context health management, archival systems, and a deeper feudal hierarchy.
+> Based on [Claude-Code-Communication](https://github.com/Akira-Papa/Claude-Code-Communication) by Akira-Papa, via [multi-agent-shogun](https://github.com/yohey-w/multi-agent-shogun) by yohey-w. Extensively redesigned with external agent integration (Gemini, Codex), context health management, archival systems, and a deeper feudal hierarchy.
 
 ---
 
@@ -88,6 +90,32 @@ Most AI coding tools charge per token. Running multiple Opus-grade agents throug
 
 **"Use AI recklessly"** — With flat-rate CLI subscriptions, deploy multiple agents without hesitation. The cost is the same whether they work 1 hour or 24 hours. No more choosing between "good enough" and "thorough" — just run more agents.
 
+### Multi-CLI Support
+
+Bakuhu isn't locked to one vendor. The system supports 4 CLI tools, each with unique strengths:
+
+| CLI | Key Strength | Default Model |
+|-----|-------------|---------------|
+| **Claude Code** | Battle-tested tmux integration, Memory MCP, dedicated file tools (Read/Write/Edit/Glob/Grep) | Claude Sonnet 4.5 |
+| **OpenAI Codex** | Sandbox execution, JSONL structured output, `codex exec` headless mode | gpt-5.3-codex |
+| **GitHub Copilot** | Built-in GitHub MCP, 4 specialized agents (Explore/Task/Plan/Code-review), `/delegate` to coding agent | Claude Sonnet 4.5 |
+| **Kimi Code** | Free tier available, strong multilingual support | Kimi k2 |
+
+A unified instruction build system generates CLI-specific instruction files from shared templates:
+
+```
+instructions/
+├── common/              # Shared rules (all CLIs)
+├── cli_specific/        # CLI-specific tool descriptions
+│   ├── claude_tools.md  # Claude Code tools & features
+│   └── copilot_tools.md # GitHub Copilot CLI tools & features
+└── roles/               # Role definitions (shogun, karo, ashigaru)
+    ↓ build
+CLAUDE.md / AGENTS.md / copilot-instructions.md  ← Generated per CLI
+```
+
+One source of truth, zero sync drift. Change a rule once, all CLIs get it.
+
 ---
 
 ## Architecture
@@ -103,9 +131,35 @@ Most AI coding tools charge per token. Running multiple Opus-grade agents throug
 | **Shinobi (忍び)** | Intelligence — research, web search, large document analysis | Gemini | External |
 | **Gunshi (軍師)** | Strategist — deep reasoning, code review, design decisions | Codex | External |
 
+### Agent Team (Claude Code Sub-agents)
+
+Separate from the tmux hierarchy, Bakuhu uses **Claude Code's native Agent Team feature** for complex development tasks requiring orchestration. These agents run as sub-processes within Claude Code, not as tmux panes.
+
+| Agent | Role | Model | Tools |
+|-------|------|-------|-------|
+| **Bugyo (奉行)** | Task Commander — breaks down tasks, coordinates team, validates quality. Never writes code directly; delegates to Ashigaru | inherit | All (delegate mode) |
+| **Ashigaru (足軽)** | Implementation Worker — writes code, runs tests, debugs. Adheres to quality standards: `ruff check + format + pytest` | Sonnet | All |
+| **Goikenban (御意見番)** | Code Reviewer — identifies problems, security risks, edge cases. Read-only (no Write/Edit access). Reports in 3 levels: Critical / Warning / Suggestion | Opus | Read, Grep, Glob, Bash |
+
+**Workflow:**
+1. Bugyo receives task → decomposes into subtasks → creates TaskList
+2. Bugyo spawns Ashigaru (implementation) and Goikenban (review) via Task tool
+3. Ashigaru execute assigned tasks in parallel
+4. Goikenban reviews all changes after implementation complete
+5. If Critical issues found → Ashigaru fix → re-review cycle
+6. Once all Critical issues resolved → Bugyo reports completion and shuts down team
+
+**Key difference from tmux agents:**
+- **tmux agents** (Shogun/Karo/Ashigaru/Denrei): Long-lived, coordinated via YAML files, visible in tmux panes
+- **Agent Team**: Short-lived, spawned on-demand for specific tasks, coordinated via Claude Code's Task/SendMessage tools, exist only for task duration
+
+**Usage:** Invoke by spawning a Bugyo agent with a complex task description. Bugyo will automatically assemble the team as needed.
+
+> **Note:** Agent Team requires setup. Agents are defined in `.claude/agents/` as YAML + Markdown files. Claude Code's Agent Team feature must be enabled. This system is under active development and setup may be simplified in future versions.
+
 ### Communication protocol
 
-- **Downward** (orders): Write YAML → wake target with `tmux send-keys`
+- **Downward** (orders): Write YAML → wake target with `tmux send-keys` (or mailbox system)
 - **Upward** (reports): Write YAML only (no send-keys to avoid interrupting your input)
 - **External agents**: Always summoned via Denrei (never directly)
 - **Polling**: Forbidden. Event-driven only. Your API bill stays predictable.
@@ -144,7 +198,7 @@ Step 3: Agent reads its own inbox
 | Priority | Method | What happens | When used |
 |----------|--------|-------------|-----------|
 | 1st | **Self-Watch** | Agent watches its own inbox file — wakes itself, no nudge needed | Agent has its own `inotifywait` running |
-| 2nd | **tmux send-keys** | Sends short nudge via `tmux send-keys` (text and Enter sent separately) | Default fallback if self-watch misses |
+| 2nd | **tmux send-keys** | Sends short nudge via `tmux send-keys` (text and Enter sent separately for Codex CLI compatibility) | Default fallback if self-watch misses |
 
 **3-Phase Escalation** — If agent doesn't respond to nudge:
 
@@ -218,6 +272,10 @@ The Shogun can summon external specialists **via Denrei (messengers)** for tasks
 |-------|------|------|-----------|
 | **Shinobi (忍び)** | Gemini CLI | Intelligence & Research | 1M token context, Web search, PDF/video analysis |
 | **Gunshi (軍師)** | Codex CLI | Strategic Advisor | Deep reasoning, Design decisions, Code review |
+
+**Requirements:**
+- **Shinobi**: Requires [Gemini CLI](https://github.com/google/generative-ai-cli) installed separately
+- **Gunshi**: Requires [Codex CLI](https://github.com/openai/codex-cli) installed separately
 
 **Key rules:**
 - Shogun/Karo summon external agents **only via Denrei** (forbidden action F006 if done directly)
@@ -417,6 +475,8 @@ Control your AI army from your phone — bed, café, or bathroom.
 
 **Voice input:** Use your phone's voice keyboard to speak commands. The Shogun understands natural language, so typos from speech-to-text don't matter.
 
+**Even simpler:** With ntfy configured, you can receive notifications and send commands directly from the ntfy app — no SSH required.
+
 ---
 
 <details>
@@ -479,7 +539,7 @@ Then restart your computer and run `install.bat` again.
 |--------|---------|-------------|
 | `install.bat` | Windows: WSL2 + Ubuntu setup | First time only |
 | `first_setup.sh` | Install tmux, Node.js, Claude Code CLI + Memory MCP config | First time only |
-| `shutsujin_departure.sh` | Create tmux sessions + launch Claude Code + load instructions | Daily |
+| `shutsujin_departure.sh` | Create tmux sessions + launch Claude Code + load instructions + start ntfy listener | Daily |
 
 ### What `install.bat` does automatically:
 - ✅ Checks if WSL2 is installed (guides you if not)
@@ -491,6 +551,7 @@ Then restart your computer and run `install.bat` again.
 - ✅ Launches Claude Code on all agents
 - ✅ Auto-loads instruction files for each agent
 - ✅ Resets queue files for a fresh state
+- ✅ Starts ntfy listener for phone notifications (if configured)
 
 **After running, all agents are ready to receive commands!**
 
@@ -664,9 +725,9 @@ Each tmux pane shows the agent's current task directly on its border:
 │                                      │                                     │
 │  Working on SayTask requirements     │  Researching REST API patterns      │
 │                                      │                                     │
-├ ashigaru2 (Sonnet) ─────────────────┼ ashigaru4 (Opus) DB schema design ──┤
+├ ashigaru2 (Sonnet) ─────────────────┼ denrei1 (Haiku) ────────────────────┤
 │                                      │                                     │
-│  (idle — waiting for assignment)     │  Designing database schema          │
+│  (idle — waiting for assignment)     │  Summoning Shinobi for web search   │
 │                                      │                                     │
 └──────────────────────────────────────┴─────────────────────────────────────┘
 ```
@@ -709,6 +770,185 @@ task:
 ```
 
 Silent mode sets `DISPLAY_MODE=silent` as a tmux environment variable. The Karo checks this when writing task YAMLs and omits the `echo_message` field.
+
+### 📱 7. Phone Notifications (ntfy)
+
+Two-way communication between your phone and the Shogun — no SSH, no Tailscale, no server needed.
+
+| Direction | How it works |
+|-----------|-------------|
+| **Phone → Shogun** | Send a message from the ntfy app → `ntfy_listener.sh` receives it via streaming → Shogun processes automatically |
+| **Karo → Phone (direct)** | When Karo updates `dashboard.md`, it sends push notifications directly via `scripts/ntfy.sh` — **Shogun is bypassed** (Shogun is for human interaction, not progress reporting) |
+
+```
+📱 You (from bed)          🏯 Shogun
+    │                          │
+    │  "Research React 19"     │
+    ├─────────────────────────►│
+    │    (ntfy message)        │  → Delegates to Karo → Ashigaru work
+    │                          │
+    │  "✅ cmd_042 complete"   │
+    │◄─────────────────────────┤
+    │    (push notification)   │
+```
+
+**Setup:**
+1. Add `ntfy_topic: "shogun-yourname"` to `config/settings.yaml`
+2. Install the [ntfy app](https://ntfy.sh) on your phone and subscribe to the same topic
+3. `shutsujin_departure.sh` automatically starts the listener — no extra steps
+
+**Notification examples:**
+
+| Event | Notification |
+|-------|-------------|
+| Command completed | `✅ cmd_042 complete — 5/5 subtasks done` |
+| Task failed | `❌ subtask_042c failed — API rate limit` |
+| Action required | `🚨 Action needed: approve skill candidate` |
+| Streak update | `🔥 3-day streak! 12/12 tasks today` |
+
+Free, no account required, no server to maintain. Uses [ntfy.sh](https://ntfy.sh) — an open-source push notification service.
+
+> **⚠️ Security:** Your topic name is your password. Anyone who knows it can read your notifications and send messages to your Shogun. Choose a hard-to-guess name and **never share it publicly** (e.g., in screenshots, blog posts, or GitHub commits).
+
+**Verify it works:**
+
+```bash
+# Send a test notification to your phone
+bash scripts/ntfy.sh "Test notification from Shogun 🏯"
+```
+
+If your phone receives the notification, you're all set. If not, check:
+- `config/settings.yaml` has `ntfy_topic` set (not empty, no extra quotes)
+- The ntfy app on your phone is subscribed to **the exact same topic name**
+- Your phone has internet access and ntfy notifications are enabled
+
+**Sending commands from your phone:**
+
+1. Open the ntfy app on your phone
+2. Tap your subscribed topic
+3. Type a message (e.g., `Research React 19 best practices`) and send
+4. `ntfy_listener.sh` receives it, writes to `queue/ntfy_inbox.yaml`, and wakes the Shogun
+5. The Shogun reads the message and processes it through the normal Karo → Ashigaru pipeline
+
+Any text you send becomes a command. Write it like you'd talk to the Shogun — no special syntax needed.
+
+**Manual listener start** (if not using `shutsujin_departure.sh`):
+
+```bash
+# Start the listener in the background
+nohup bash scripts/ntfy_listener.sh &>/dev/null &
+
+# Check if it's running
+pgrep -f ntfy_listener.sh
+
+# View listener logs (stderr output)
+bash scripts/ntfy_listener.sh  # Run in foreground to see logs
+```
+
+The listener automatically reconnects if the connection drops. `shutsujin_departure.sh` starts it automatically on deployment — you only need manual start if you skipped the deployment script.
+
+**Troubleshooting:**
+
+| Problem | Fix |
+|---------|-----|
+| No notifications on phone | Check topic name matches exactly in `settings.yaml` and ntfy app |
+| Listener not starting | Run `bash scripts/ntfy_listener.sh` in foreground to see errors |
+| Phone → Shogun not working | Verify listener is running: `pgrep -f ntfy_listener.sh` |
+| Messages not reaching Shogun | Check `queue/ntfy_inbox.yaml` — if message is there, Shogun may be busy |
+| "ntfy_topic not configured" error | Add `ntfy_topic: "your-topic"` to `config/settings.yaml` |
+| Duplicate notifications | Normal on reconnect — Shogun deduplicates by message ID |
+| Changed topic name but no notifications | The listener must be restarted: `pkill -f ntfy_listener.sh && nohup bash scripts/ntfy_listener.sh &>/dev/null &` |
+
+#### SayTask Notifications
+
+Behavioral psychology-driven motivation through your notification feed:
+
+- **Streak tracking**: Consecutive completion days counted in `saytask/streaks.yaml` — maintaining streaks leverages loss aversion to sustain momentum
+- **Eat the Frog** 🐸: The hardest task of the day is marked as the "Frog." Completing it triggers a special celebration notification
+- **Daily progress**: `12/12 tasks today` — visual completion feedback reinforces the Arbeitslust effect (joy of work-in-progress)
+
+---
+
+## 🗣️ SayTask — Task Management for People Who Hate Task Management
+
+### What is SayTask?
+
+**Task management for people who hate task management. Just speak to your phone.**
+
+**Talk Coding, not Vibe Coding.** Speak your tasks, AI organizes them. No typing, no opening apps, no friction.
+
+- **Target audience**: People who installed Todoist but stopped opening it after 3 days
+- Your enemy isn't other apps — it's doing nothing. The competition is inaction, not another productivity tool
+- Zero UI. Zero typing. Zero app-opening. Just talk
+
+> *"Your enemy isn't other apps — it's doing nothing."*
+
+### How it Works
+
+1. Install the [ntfy app](https://ntfy.sh) (free, no account needed)
+2. Speak to your phone: *"dentist tomorrow"*, *"invoice due Friday"*
+3. AI auto-organizes → morning notification: *"here's your day"*
+
+```
+ 🗣️ "Buy milk, dentist tomorrow, invoice due Friday"
+       │
+       ▼
+ ┌──────────────────┐
+ │  ntfy → Shogun   │  AI auto-categorize, parse dates, set priorities
+ └────────┬─────────┘
+          │
+          ▼
+ ┌──────────────────┐
+ │   tasks.yaml     │  Structured storage (local, never leaves your machine)
+ └────────┬─────────┘
+          │
+          ▼
+ 📱 Morning notification:
+    "Today: 🐸 Invoice due · 🦷 Dentist 3pm · 🛒 Buy milk"
+```
+
+### Use Cases
+
+- 🛏️ **In bed**: *"Gotta submit the report tomorrow"* — captured before you forget, no fumbling for a notebook
+- 🚗 **While driving**: *"Don't forget the estimate for client A"* — hands-free, eyes on the road
+- 💻 **Mid-work**: *"Oh, need to buy milk"* — dump it instantly and stay in flow
+- 🌅 **Wake up**: Today's tasks already waiting in your notifications — no app to open, no inbox to check
+- 🐸 **Eat the Frog**: AI picks your hardest task each morning — ignore it or conquer it first
+
+### FAQ
+
+**Q: How is this different from other task apps?**
+A: You never open an app. Just speak. Zero friction. Most task apps fail because people stop opening them. SayTask removes that step entirely.
+
+**Q: Can I use SayTask without the full Bakuhu system?**
+A: SayTask is a feature of Bakuhu. Bakuhu also works as a standalone multi-agent development platform — you get both capabilities in one system.
+
+**Q: What's the Frog 🐸?**
+A: Every morning, AI picks your hardest task — the one you'd rather avoid. Tackle it first (the "Eat the Frog" method) or ignore it. Your call.
+
+**Q: Is it free?**
+A: Everything is free and open-source. ntfy is free too. No account, no server, no subscription.
+
+**Q: Where is my data stored?**
+A: Local YAML files on your machine. Nothing is sent to the cloud. Your tasks never leave your device.
+
+**Q: What if I say something vague like "that thing for work"?**
+A: AI does its best to categorize and schedule it. You can always refine later — but the point is capturing the thought before it disappears.
+
+### SayTask vs cmd Pipeline
+
+Bakuhu has two complementary task systems:
+
+| Capability | SayTask (Voice Layer) | cmd Pipeline (AI Execution) |
+|---|:-:|:-:|
+| Voice input → task creation | ✅ | — |
+| Morning notification digest | ✅ | — |
+| Eat the Frog 🐸 selection | ✅ | — |
+| Streak tracking | ✅ | ✅ |
+| AI-executed tasks (multi-step) | — | ✅ |
+| Multiple-agent parallel execution | — | ✅ |
+
+SayTask handles personal productivity (capture → schedule → remind). The cmd pipeline handles complex work (research, code, multi-step tasks). Both share streak tracking — completing either type of task counts toward your daily streak.
 
 ---
 
@@ -949,6 +1189,38 @@ screenshot:
 
 Tell the Shogun "check the latest screenshot" and it reads your screen captures for visual context. (`Win+Shift+S` on Windows.)
 
+### ntfy (Phone Notifications)
+
+```yaml
+# config/settings.yaml
+ntfy_topic: "shogun-yourname"
+```
+
+Subscribe to the same topic in the [ntfy app](https://ntfy.sh) on your phone. The listener starts automatically with `shutsujin_departure.sh`.
+
+#### ntfy Authentication (Self-Hosted Servers)
+
+The public ntfy.sh instance requires **no authentication** — the setup above is all you need.
+
+If you run a self-hosted ntfy server with access control enabled, configure authentication:
+
+```bash
+# 1. Copy the sample config
+cp config/ntfy_auth.env.sample config/ntfy_auth.env
+
+# 2. Edit with your credentials (choose one method)
+```
+
+| Method | Config | When to use |
+|--------|--------|-------------|
+| **Bearer Token** (recommended) | `NTFY_TOKEN=tk_your_token_here` | Self-hosted ntfy with token auth (`ntfy token add <user>`) |
+| **Basic Auth** | `NTFY_USER=username` + `NTFY_PASS=password` | Self-hosted ntfy with user/password |
+| **None** (default) | Leave file empty or don't create it | Public ntfy.sh — no auth needed |
+
+Priority: Token > Basic > None. If neither is set, no auth headers are sent (backward compatible).
+
+`config/ntfy_auth.env` is excluded from git. See `config/ntfy_auth.env.sample` for details.
+
 ---
 
 ## Advanced
@@ -1097,15 +1369,25 @@ multi-agent-bakuhu/
 │   ├── ashigaru.md           # Ashigaru instructions
 │   ├── denrei.md             # Denrei (messenger) instructions
 │   ├── shinobi.md            # Shinobi (Gemini) instructions
-│   └── gunshi.md             # Gunshi (Codex) instructions
+│   ├── gunshi.md             # Gunshi (Codex) instructions
+│   └── cli_specific/         # CLI-specific tool descriptions
+│       ├── claude_tools.md   # Claude Code tools & features
+│       └── copilot_tools.md  # GitHub Copilot CLI tools & features
+│
+├── lib/
+│   ├── cli_adapter.sh        # Multi-CLI adapter (Claude/Codex/Copilot/Kimi)
+│   └── ntfy_auth.sh          # ntfy authentication helper
 │
 ├── scripts/                  # Utility scripts
 │   ├── inbox_write.sh        # Write messages to agent inbox
 │   ├── inbox_watcher.sh      # Watch inbox changes via inotifywait
+│   ├── ntfy.sh               # Send push notifications to phone
+│   ├── ntfy_listener.sh      # Stream incoming messages from phone
 │   └── extract-section.sh    # Markdown section extractor (bash+awk)
 │
 ├── config/
-│   ├── settings.yaml         # Language, model, agent count settings
+│   ├── settings.yaml         # Language, ntfy, agent count, and other settings
+│   ├── ntfy_auth.env.sample  # ntfy authentication template (self-hosted)
 │   └── projects.yaml         # Project registry
 │
 ├── projects/                 # Project details (excluded from git, contains confidential info)
@@ -1113,6 +1395,11 @@ multi-agent-bakuhu/
 │
 ├── queue/                    # Communication files
 │   ├── shogun_to_karo.yaml   # Shogun → Karo commands
+│   ├── ntfy_inbox.yaml       # Incoming messages from phone (ntfy)
+│   ├── inbox/                # Per-agent inbox files
+│   │   ├── shogun.yaml       # Messages to Shogun
+│   │   ├── karo.yaml         # Messages to Karo
+│   │   └── ashigaru{1-N}.yaml # Messages to each Ashigaru
 │   ├── tasks/                # Per-worker task files
 │   │   └── ashigaru{1-N}.yaml
 │   ├── reports/              # Worker reports
@@ -1122,6 +1409,9 @@ multi-agent-bakuhu/
 │   │   └── reports/denrei{1-2}_report.yaml
 │   ├── shinobi/reports/      # Shinobi (Gemini) reports
 │   └── gunshi/reports/       # Gunshi (Codex) reports
+│
+├── saytask/                  # Behavioral psychology-driven motivation
+│   └── streaks.yaml          # Streak tracking and daily progress
 │
 ├── skills/                   # Skill definitions
 │   ├── context-health.md     # /compact templates, mixed strategy
@@ -1286,6 +1576,32 @@ tmux respawn-pane -t shogun:0.0 -k 'claude --model opus --dangerously-skip-permi
 | Drag pane border | Resize panes |
 
 Even if you're not comfortable with keyboard shortcuts, you can switch, scroll, and resize panes using just the mouse.
+
+---
+
+## What's New in v3.0 — Multi-CLI
+
+> **Bakuhu is no longer Claude-only.** Mix and match 4 AI coding CLIs in a single army.
+
+- **Multi-CLI as first-class architecture** — `lib/cli_adapter.sh` dynamically selects CLI per agent. Change one line in `settings.yaml` to swap any worker between Claude Code, Codex, Copilot, or Kimi
+- **OpenAI Codex CLI integration** — GPT-5.3-codex with `--dangerously-bypass-approvals-and-sandbox` for true autonomous execution. `--no-alt-screen` makes agent activity visible in tmux
+- **CLI bypass flag discovery** — `--full-auto` is NOT fully automatic (it's `-a on-request`). Documented the correct flags for all 4 CLIs
+- **Hybrid architecture** — Command layer (Shogun + Karo) stays on Claude Code for Memory MCP and mailbox integration. Worker layer (Ashigaru) is CLI-agnostic
+- **Community-contributed CLI adapters** — Thanks to [@yuto-ts](https://github.com/yuto-ts) (cli_adapter.sh), [@circlemouth](https://github.com/circlemouth) (Codex support), [@koba6316](https://github.com/koba6316) (task routing)
+
+<details>
+<summary><b>What was in v2.0</b></summary>
+
+- **ntfy bidirectional communication** — Send commands from your phone, receive push notifications for task completion
+- **SayTask notifications** — Streak tracking, Eat the Frog, behavioral psychology-driven motivation
+- **Pane border task display** — See each agent's current task at a glance on the tmux pane border
+- **Shout mode** (default) — Ashigaru shout personalized battle cries after completing tasks. Disable with `--silent`
+- **Agent self-watch + escalation** — Each agent monitors its own inbox file with `inotifywait` (zero-polling, instant wake-up). Fallback: `tmux send-keys` short nudge (text/Enter sent separately for Codex CLI). 3-phase escalation: standard nudge (0-2min) → Escape×2+nudge (2-4min) → `/clear` force reset (4min+). Linux FS symlink resolves WSL2 9P inotify issues.
+- **Agent self-identification** (`@agent_id`) — Stable identity via tmux user options, immune to pane reordering
+- **Battle mode** (`-k` flag) — All-Opus formation for maximum capability
+- **Task dependency system** (`blockedBy`) — Automatic unblocking of dependent tasks
+
+</details>
 
 ---
 
