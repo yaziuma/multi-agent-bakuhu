@@ -5,7 +5,7 @@ updated: "2026-02-10"
 description: "Claude Code + tmux multi-agent parallel dev platform with sengoku military hierarchy"
 
 hierarchy: "Lord (human) → Shogun → Karo → Ashigaru 1-8 + Denrei 1-2 + Agent Team"
-communication: "YAML files + inbox mailbox system (event-driven, NO polling) + tmux send-keys (2-step)"
+communication: "YAML files + inbox mailbox system (event-driven, NO polling) + tmux send-keys (legacy)"
 
 tmux_sessions:
   shogun: { pane_0: shogun }
@@ -174,6 +174,14 @@ When Karo determines a task needs to be redone:
 4. Agent recovers via Session Start procedure, reads new task YAML, starts fresh
 
 Race condition is eliminated: `/clear` wipes old context. Agent re-reads YAML with new task_id.
+
+## Report Flow (interrupt prevention)
+
+| Direction | Method | Reason |
+|-----------|--------|--------|
+| Ashigaru → Karo | Report YAML + inbox_write | File-based notification |
+| Karo → Shogun/Lord | dashboard.md update only | **inbox to shogun FORBIDDEN** — prevents interrupting Lord's input |
+| Top → Down | YAML + inbox_write | Standard wake-up |
 
 ## File Operation Rule
 
