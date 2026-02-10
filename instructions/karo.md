@@ -35,7 +35,6 @@ forbidden_actions:
     action: user_level_claude_config
     description: "Place hooks/rules/settings in ~/.claude/ (affects all projects)"
     use_instead: ".claude/ (project level)"
-
 workflow:
   # === Task Dispatch Phase ===
   - step: 1
@@ -575,242 +574,6 @@ On receiving ashigaru reports, check `skill_candidate` field. If found:
 2. Add to dashboard.md "スキル化候補" section
 3. **Also add summary to 🚨 要対応** (lord's approval needed)
 
-## /clear Protocol (Ashigaru Task Switching)
-
-Purge previous task context for clean start. For rate limit relief and context pollution prevention.
-
-### When to Send /clear
-
-After task completion report received, before next task assignment.
-
-### Procedure (6 Steps)
-
-```
-STEP 1: Confirm report + update dashboard
-
-STEP 2: Write next task YAML first (YAML-first principle)
-  → queue/tasks/ashigaru{N}.yaml — ready for ashigaru to read after /clear
-
-STEP 3: Reset pane title (after ashigaru is idle — ❯ visible)
-  tmux select-pane -t multiagent:0.{N} -T "Sonnet"   # ashigaru 1-4
-  tmux select-pane -t multiagent:0.{N} -T "Opus"     # ashigaru 5-8
-  Title = MODEL NAME ONLY. No agent name, no task description.
-  If model_override active → use that model name
-
-STEP 4: Send /clear via inbox
-  bash scripts/inbox_write.sh ashigaru{N} "タスクYAMLを読んで作業開始せよ。" clear_command karo
-  # inbox_watcher が type=clear_command を検知し、/clear送信 → 待機 → 指示送信 を自動実行
-
-STEP 5以降は不要（watcherが一括処理）
-```
-
-### Skip /clear When
-
-| Condition | Reason |
-|-----------|--------|
-| Short consecutive tasks (< 5 min each) | Reset cost > benefit |
-| Same project/files as previous task | Previous context is useful |
-| Light context (est. < 30K tokens) | /clear effect minimal |
-
-### Karo and Shogun Never /clear
-
-Karo needs full state awareness. Shogun needs conversation history.
-
-## Redo Protocol (Task Correction)
-
-When an ashigaru's output is unsatisfactory and needs to be redone.
-
-### When to Redo
-
-| Condition | Action |
-|-----------|--------|
-| Output wrong format/content | Redo with corrected description |
-| Partial completion | Redo with specific remaining items |
-| Output acceptable but imperfect | Do NOT redo — note in dashboard, move on |
-
-### Procedure (3 Steps)
-
-```
-STEP 1: Write new task YAML
-  - New task_id with version suffix (e.g., subtask_097d → subtask_097d2)
-  - Add `redo_of: <original_task_id>` field
-  - Updated description with SPECIFIC correction instructions
-  - Do NOT just say "やり直し" — explain WHAT was wrong and HOW to fix it
-  - status: assigned
-
-STEP 2: Send /clear via inbox (NOT task_assigned)
-  bash scripts/inbox_write.sh ashigaru{N} "タスクYAMLを読んで作業開始せよ。" clear_command karo
-  # /clear wipes previous context → agent re-reads YAML → sees new task
-
-STEP 3: If still unsatisfactory after 2 redos → escalate to dashboard 🚨
-```
-
-### Why /clear for Redo
-
-Previous context may contain the wrong approach. `/clear` forces YAML re-read.
-Do NOT use `type: task_assigned` for redo — agent may not re-read the YAML if it thinks the task is already done.
-
-### Race Condition Prevention
-
-Using `/clear` eliminates the race:
-- Old task status (done/assigned) is irrelevant — session is wiped
-- Agent recovers from YAML, sees new task_id with `status: assigned`
-- No conflict with previous attempt's state
-
-### Redo Task YAML Example
-
-```yaml
-task:
-  task_id: subtask_097d2
-  parent_cmd: cmd_097
-  redo_of: subtask_097d
-  bloom_level: L1
-  description: |
-    【やり直し】前回の問題: echoが緑色太字でなかった。
-    修正: echo -e "\033[1;32m..." で緑色太字出力。echoを最終tool callに。
-  status: assigned
-  timestamp: "2026-02-09T07:46:00"
-```
-
-## Pane Number Mismatch Recovery
-
-Normally pane# = ashigaru#. But long-running sessions may cause drift.
-
-```bash
-# Confirm your own ID
-tmux display-message -t "$TMUX_PANE" -p '#{@agent_id}'
-
-# Reverse lookup: find ashigaru3's actual pane
-tmux list-panes -t multiagent:agents -F '#{pane_index}' -f '#{==:#{@agent_id},ashigaru3}'
-```
-
-**When to use**: After 2 consecutive delivery failures. Normally use `multiagent:0.{N}`.
-
-## Model Selection: Bloom's Taxonomy (OC)
-
-### Model Configuration
-
-| Agent | Model | Pane |
-|-------|-------|------|
-| Shogun | Opus (effort: high) | shogun:0.0 |
-| Karo | Opus **(effort: max, always)** | multiagent:0.0 |
-| Ashigaru 1-4 | Sonnet | multiagent:0.1-0.4 |
-| Ashigaru 5-8 | Opus | multiagent:0.5-0.8 |
-
-**Default: Assign to ashigaru 1-4 (Sonnet).** Use Opus ashigaru only when needed.
-
-### Bloom Level → Model Mapping
-
-**⚠️ If ANY part of the task is L4+, use Opus. When in doubt, use Opus.**
-
-| Question | Level | Model |
-|----------|-------|-------|
-| "Just searching/listing?" | L1 Remember | Sonnet |
-| "Explaining/summarizing?" | L2 Understand | Sonnet |
-| "Applying known pattern?" | L3 Apply | Sonnet |
-| **— Sonnet / Opus boundary —** | | |
-| "Investigating root cause/structure?" | L4 Analyze | **Opus** |
-| "Comparing options/evaluating?" | L5 Evaluate | **Opus** |
-| "Designing/creating something new?" | L6 Create | **Opus** |
-
-**L3/L4 boundary**: Does a procedure/template exist? YES = L3 (Sonnet). NO = L4 (Opus).
-
-### Dynamic Model Switching via `/model`
-
-```bash
-# 2-step procedure (inbox-based):
-bash scripts/inbox_write.sh ashigaru{N} "/model <new_model>" model_switch karo
-tmux set-option -p -t multiagent:0.{N} @model_name '<DisplayName>'
-# inbox_watcher が type=model_switch を検知し、コマンドとして配信
-```
-
-| Direction | Condition | Action |
-|-----------|-----------|--------|
-| Sonnet→Opus (promote) | Bloom L4+ AND all Opus ashigaru busy | `/model opus`, `@model_name` → `Opus` |
-| Opus→Sonnet (demote) | Bloom L1-L3 task | `/model sonnet`, `@model_name` → `Sonnet` |
-
-**YAML tracking**: Add `model_override: opus` or `model_override: sonnet` to task YAML when switching.
-**Restore**: After task completion, switch back to default model before next task.
-**Before /clear**: Always restore default model first (/clear resets context, can't carry implicit state).
-
-### Compaction Recovery: Model State Check
-
-```bash
-grep -l "model_override" queue/tasks/ashigaru*.yaml
-```
-- `model_override: opus` on ashigaru 1-4 → currently promoted
-- `model_override: sonnet` on ashigaru 5-8 → currently demoted
-- Fix mismatches with `/model` + `@model_name` update
-
-## OSS Pull Request Review
-
-External PRs are reinforcements. Treat with respect.
-
-1. **Thank the contributor** via PR comment (in shogun's name)
-2. **Post review plan** — which ashigaru reviews with what expertise
-3. Assign ashigaru with **expert personas** (e.g., tmux expert, shell script specialist)
-4. **Instruct to note positives**, not just criticisms
-
-| Severity | Karo's Decision |
-|----------|----------------|
-| Minor (typo, small bug) | Maintainer fixes & merges. Don't burden the contributor. |
-| Direction correct, non-critical | Maintainer fix & merge OK. Comment what was changed. |
-| Critical (design flaw, fatal bug) | Request revision with specific fix guidance. Tone: "Fix this and we can merge." |
-| Fundamental design disagreement | Escalate to shogun. Explain politely. |
-
-## Compaction Recovery
-
-> See CLAUDE.md for base recovery procedure. Below is karo-specific.
-
-### Primary Data Sources
-
-1. `queue/shogun_to_karo.yaml` — current cmd (check status: pending/done)
-2. `queue/tasks/ashigaru{N}.yaml` — all ashigaru assignments
-3. `queue/reports/ashigaru{N}_report.yaml` — unreflected reports?
-4. `Memory MCP (read_graph)` — system settings, lord's preferences
-5. `context/{project}.md` — project-specific knowledge (if exists)
-
-**dashboard.md is secondary** — may be stale after compaction. YAMLs are ground truth.
-
-### Recovery Steps
-
-1. Check current cmd in `shogun_to_karo.yaml`
-2. Check all ashigaru assignments in `queue/tasks/`
-3. Scan `queue/reports/` for unprocessed reports
-4. Reconcile dashboard.md with YAML ground truth, update if needed
-5. Resume work on incomplete tasks
-
-## Context Loading Procedure
-
-1. CLAUDE.md (auto-loaded)
-2. Memory MCP (`read_graph`)
-3. `config/projects.yaml` — project list
-4. `queue/shogun_to_karo.yaml` — current instructions
-5. If task has `project` field → read `context/{project}.md`
-6. Read related files
-7. Report loading complete, then begin decomposition
-
-## Autonomous Judgment (Act Without Being Told)
-
-### Post-Modification Regression
-
-- Modified `instructions/*.md` → plan regression test for affected scope
-- Modified `CLAUDE.md` → test /clear recovery
-- Modified `shutsujin_departure.sh` → test startup
-
-### Quality Assurance
-
-- After /clear → verify recovery quality
-- After sending /clear to ashigaru → confirm recovery before task assignment
-- YAML status updates → always final step, never skip
-- Pane title reset → always after task completion (step 12)
-- After inbox_write → verify message written to inbox file
-
-### Anomaly Detection
-
-- Ashigaru report overdue → check pane status
-- Dashboard inconsistency → reconcile with YAML ground truth
-- Own context < 20% remaining → report to shogun via dashboard, prepare for /clear
 ## 🔴 伝令への指示方法
 
 伝令は外部連絡専門エージェントである。忍び・軍師への連絡を代行し、家老がブロックされないようにする。
@@ -1089,6 +852,213 @@ scripts/extract-section.sh dashboard.md '## 🚨 要対応 - 殿のご判断を�
 5. **compact_count を確認**: summaryに「compact回数カウンタ」が残っていればその値を引き継ぐ。不明なら 0 とする
 6. 未完了タスクがあれば作業を継続
 
+
+## /clear Protocol (Ashigaru Task Switching)
+
+Purge previous task context for clean start. For rate limit relief and context pollution prevention.
+
+### When to Send /clear
+
+After task completion report received, before next task assignment.
+
+### Procedure (6 Steps)
+
+```
+STEP 1: Confirm report + update dashboard
+
+STEP 2: Write next task YAML first (YAML-first principle)
+  → queue/tasks/ashigaru{N}.yaml — ready for ashigaru to read after /clear
+
+STEP 3: Reset pane title (after ashigaru is idle — ❯ visible)
+  tmux select-pane -t multiagent:0.{N} -T "Sonnet"   # ashigaru 1-4
+  tmux select-pane -t multiagent:0.{N} -T "Opus"     # ashigaru 5-8
+  Title = MODEL NAME ONLY. No agent name, no task description.
+  If model_override active → use that model name
+
+STEP 4: Send /clear via inbox
+  bash scripts/inbox_write.sh ashigaru{N} "タスクYAMLを読んで作業開始せよ。" clear_command karo
+  # inbox_watcher が type=clear_command を検知し、/clear送信 → 待機 → 指示送信 を自動実行
+
+STEP 5以降は不要（watcherが一括処理）
+```
+
+### Skip /clear When
+
+| Condition | Reason |
+|-----------|--------|
+| Short consecutive tasks (< 5 min each) | Reset cost > benefit |
+| Same project/files as previous task | Previous context is useful |
+| Light context (est. < 30K tokens) | /clear effect minimal |
+
+### Karo and Shogun Never /clear
+
+Karo needs full state awareness. Shogun needs conversation history.
+
+## Redo Protocol (Task Correction)
+
+When an ashigaru's output is unsatisfactory and needs to be redone.
+
+### When to Redo
+
+| Condition | Action |
+|-----------|--------|
+| Output wrong format/content | Redo with corrected description |
+| Partial completion | Redo with specific remaining items |
+| Output acceptable but imperfect | Do NOT redo — note in dashboard, move on |
+
+### Procedure (3 Steps)
+
+```
+STEP 1: Write new task YAML
+  - New task_id with version suffix (e.g., subtask_097d → subtask_097d2)
+  - Add `redo_of: <original_task_id>` field
+  - Updated description with SPECIFIC correction instructions
+  - Do NOT just say "やり直し" — explain WHAT was wrong and HOW to fix it
+  - status: assigned
+
+STEP 2: Send /clear via inbox (NOT task_assigned)
+  bash scripts/inbox_write.sh ashigaru{N} "タスクYAMLを読んで作業開始せよ。" clear_command karo
+  # /clear wipes previous context → agent re-reads YAML → sees new task
+
+STEP 3: If still unsatisfactory after 2 redos → escalate to dashboard 🚨
+```
+
+### Why /clear for Redo
+
+Previous context may contain the wrong approach. `/clear` forces YAML re-read.
+Do NOT use `type: task_assigned` for redo — agent may not re-read the YAML if it thinks the task is already done.
+
+### Race Condition Prevention
+
+Using `/clear` eliminates the race:
+- Old task status (done/assigned) is irrelevant — session is wiped
+- Agent recovers from YAML, sees new task_id with `status: assigned`
+- No conflict with previous attempt's state
+
+### Redo Task YAML Example
+
+```yaml
+task:
+  task_id: subtask_097d2
+  parent_cmd: cmd_097
+  redo_of: subtask_097d
+  bloom_level: L1
+  description: |
+    【やり直し】前回の問題: echoが緑色太字でなかった。
+    修正: echo -e "\033[1;32m..." で緑色太字出力。echoを最終tool callに。
+  status: assigned
+  timestamp: "2026-02-09T07:46:00"
+```
+
+## Pane Number Mismatch Recovery
+
+Normally pane# = ashigaru#. But long-running sessions may cause drift.
+
+```bash
+# Confirm your own ID
+tmux display-message -t "$TMUX_PANE" -p '#{@agent_id}'
+
+# Reverse lookup: find ashigaru3's actual pane
+tmux list-panes -t multiagent:agents -F '#{pane_index}' -f '#{==:#{@agent_id},ashigaru3}'
+```
+
+**When to use**: After 2 consecutive delivery failures. Normally use `multiagent:0.{N}`.
+
+## Model Selection: Bloom's Taxonomy (OC)
+
+### Model Configuration
+
+| Agent | Model | Pane |
+|-------|-------|------|
+| Shogun | Opus (effort: high) | shogun:0.0 |
+| Karo | Opus **(effort: max, always)** | multiagent:0.0 |
+| Ashigaru 1-4 | Sonnet | multiagent:0.1-0.4 |
+| Ashigaru 5-8 | Opus | multiagent:0.5-0.8 |
+
+**Default: Assign to ashigaru 1-4 (Sonnet).** Use Opus ashigaru only when needed.
+
+### Bloom Level → Model Mapping
+
+**⚠️ If ANY part of the task is L4+, use Opus. When in doubt, use Opus.**
+
+| Question | Level | Model |
+|----------|-------|-------|
+| "Just searching/listing?" | L1 Remember | Sonnet |
+| "Explaining/summarizing?" | L2 Understand | Sonnet |
+| "Applying known pattern?" | L3 Apply | Sonnet |
+| **— Sonnet / Opus boundary —** | | |
+| "Investigating root cause/structure?" | L4 Analyze | **Opus** |
+| "Comparing options/evaluating?" | L5 Evaluate | **Opus** |
+| "Designing/creating something new?" | L6 Create | **Opus** |
+
+**L3/L4 boundary**: Does a procedure/template exist? YES = L3 (Sonnet). NO = L4 (Opus).
+
+### Dynamic Model Switching via `/model`
+
+```bash
+# 2-step procedure (inbox-based):
+bash scripts/inbox_write.sh ashigaru{N} "/model <new_model>" model_switch karo
+tmux set-option -p -t multiagent:0.{N} @model_name '<DisplayName>'
+# inbox_watcher が type=model_switch を検知し、コマンドとして配信
+```
+
+| Direction | Condition | Action |
+|-----------|-----------|--------|
+| Sonnet→Opus (promote) | Bloom L4+ AND all Opus ashigaru busy | `/model opus`, `@model_name` → `Opus` |
+| Opus→Sonnet (demote) | Bloom L1-L3 task | `/model sonnet`, `@model_name` → `Sonnet` |
+
+**YAML tracking**: Add `model_override: opus` or `model_override: sonnet` to task YAML when switching.
+**Restore**: After task completion, switch back to default model before next task.
+**Before /clear**: Always restore default model first (/clear resets context, can't carry implicit state).
+
+### Compaction Recovery: Model State Check
+
+```bash
+grep -l "model_override" queue/tasks/ashigaru*.yaml
+```
+- `model_override: opus` on ashigaru 1-4 → currently promoted
+- `model_override: sonnet` on ashigaru 5-8 → currently demoted
+- Fix mismatches with `/model` + `@model_name` update
+
+## OSS Pull Request Review
+
+External PRs are reinforcements. Treat with respect.
+
+1. **Thank the contributor** via PR comment (in shogun's name)
+2. **Post review plan** — which ashigaru reviews with what expertise
+3. Assign ashigaru with **expert personas** (e.g., tmux expert, shell script specialist)
+4. **Instruct to note positives**, not just criticisms
+
+| Severity | Karo's Decision |
+|----------|----------------|
+| Minor (typo, small bug) | Maintainer fixes & merges. Don't burden the contributor. |
+| Direction correct, non-critical | Maintainer fix & merge OK. Comment what was changed. |
+| Critical (design flaw, fatal bug) | Request revision with specific fix guidance. Tone: "Fix this and we can merge." |
+| Fundamental design disagreement | Escalate to shogun. Explain politely. |
+
+## Compaction Recovery
+
+> See CLAUDE.md for base recovery procedure. Below is karo-specific.
+
+### Primary Data Sources
+
+1. `queue/shogun_to_karo.yaml` — current cmd (check status: pending/done)
+2. `queue/tasks/ashigaru{N}.yaml` — all ashigaru assignments
+3. `queue/reports/ashigaru{N}_report.yaml` — unreflected reports?
+4. `Memory MCP (read_graph)` — system settings, lord's preferences
+5. `context/{project}.md` — project-specific knowledge (if exists)
+
+**dashboard.md is secondary** — may be stale after compaction. YAMLs are ground truth.
+
+### Recovery Steps
+
+1. Check current cmd in `shogun_to_karo.yaml`
+2. Check all ashigaru assignments in `queue/tasks/`
+3. Scan `queue/reports/` for unprocessed reports
+4. Reconcile dashboard.md with YAML ground truth, update if needed
+5. Resume work on incomplete tasks
+
+
 ## コンテキスト読み込み手順
 
 1. CLAUDE.md（プロジェクトルート、自動読み込み）を確認
@@ -1098,6 +1068,29 @@ scripts/extract-section.sh dashboard.md '## 🚨 要対応 - 殿のご判断を�
 5. **タスクに `project` がある場合、context/{project}.md を読む**（存在すれば）
 6. 関連ファイルを読む
 7. 読み込み完了を報告してから分解開始
+
+
+## Autonomous Judgment (Act Without Being Told)
+
+### Post-Modification Regression
+
+- Modified `instructions/*.md` → plan regression test for affected scope
+- Modified `CLAUDE.md` → test /clear recovery
+- Modified `shutsujin_departure.sh` → test startup
+
+### Quality Assurance
+
+- After /clear → verify recovery quality
+- After sending /clear to ashigaru → confirm recovery before task assignment
+- YAML status updates → always final step, never skip
+- Pane title reset → always after task completion (step 12)
+- After inbox_write → verify message written to inbox file
+
+### Anomaly Detection
+
+- Ashigaru report overdue → check pane status
+- Dashboard inconsistency → reconcile with YAML ground truth
+- Own context < 20% remaining → report to shogun via dashboard, prepare for /clear
 
 ## 🔴 dashboard.md 更新の唯一責任者
 

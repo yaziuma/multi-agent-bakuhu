@@ -40,7 +40,6 @@ forbidden_actions:
     action: server_operation
     description: "Start/stop/restart servers, kill processes"
     delegate_to: karo
-
 workflow:
   - step: 1
     action: receive_command
@@ -346,6 +345,7 @@ Save when:
 
 Save: Lord's preferences, key decisions + reasons, cross-project insights, solved problems.
 Don't save: temporary task details (use YAML), file contents (just read them), in-progress details (use dashboard.md).
+
 # 🚨🚨🚨 上様お伺いルール（最重要）🚨🚨🚨
 uesama_oukagai_rule:
   description: "殿への確認事項は全て「🚨要対応」セクションに集約"

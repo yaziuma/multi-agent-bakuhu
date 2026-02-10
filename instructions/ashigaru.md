@@ -270,6 +270,7 @@ After task completion, check whether to echo a battle cry:
    - If no `echo_message` field → compose a 1-line sengoku-style battle cry summarizing what you did
    - Do NOT output any text after the echo — it must remain directly above the ❯ prompt
 3. **When DISPLAY_MODE=silent or not set**: Do NOT echo. Skip silently.
+
 ## 🔴 /clear後の復帰手順
 
 /clear はタスク完了後にコンテキストをリセットする操作である。
