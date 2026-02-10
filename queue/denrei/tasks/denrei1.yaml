@@ -1,68 +1,151 @@
 # 伝令1専用タスクファイル
 task:
-  task_id: denrei_gunshi_cmd054b
-  parent_cmd: cmd_054
-  priority: high
+  task_id: subtask_096_d1
+  parent_cmd: cmd_096
+  priority: critical
   description: |
-    軍師（Codex）にマークダウンセクション抽出スクリプトの **awk版** を依頼せよ。
+    ## 概要
+    cmd_096: Phase 2 リグレッション調査のため、忍び（Gemini）と軍師（Codex）に順次依頼せよ。
+    **コード修正禁止。調査のみ。**
 
-    ## 背景
-    前回の依頼でPython版が返ってきたが、殿の方針により却下。
-    本プロジェクト（multi-agent-bakuhu）はpublicリポジトリであり、
-    **Linux標準ツール（bash + awk/sed/grep + coreutils）のみ**で実装すること。
-    Pythonは不可。
+    ## 依頼1: 忍び（Gemini）への調査依頼
 
-    ## 要件（前回と同じ）
-    マークダウンファイルから見出しを指定してそのセクション全体を抽出する。
+    プロンプト（英語で依頼すること）:
+    ```
+    Research the following topics about regression patterns when converting Python generator-based (yield from) execution to explicit stack with tagged return values (PushFrame/YieldEnv pattern):
 
-    ### 動作仕様
-    1. 指定した見出し行を検索する
-    2. その見出しの開始から、同レベル以上の次の見出しの直前までを返す
-    3. 配下の子見出しは全て含む
-    4. `---` は特別扱いしない。ただのテキスト
-    5. 見出しレベルは `#` の数で判定
+    1. **Common regression patterns in generator → explicit stack conversion**:
+       We have a Python-based Prolog interpreter that previously used `yield from` for recursive execution:
+       ```
+       _execute_body_direct → yield from _execute_single_goal
+         → solve_goal_direct → yield from _execute_body_direct → ...
+       ```
+       We converted this to an explicit stack with a while loop:
+       ```
+       while stack:
+           frame = stack[-1]
+           result = frame.step(interpreter)
+           if isinstance(result, PushFrame): stack.append(new_frame)
+           elif isinstance(result, YieldEnv): yield result.env
+       ```
+       What are the MOST COMMON bugs/regressions when doing this conversion?
+       Focus on:
+       - Generator lazy evaluation semantics that get lost
+       - Backtracking semantics that break
+       - State sharing vs copying issues (environments/bindings)
+       - StopIteration propagation differences
+       - Parent-child frame communication gaps
 
-    ### 技術制約（厳守）
-    - **bash + awk のみ**。Python/Perl/Ruby等の言語は一切使用不可
-    - POSIX互換を意識（gawk拡張は最小限に）
-    - シェバン: `#!/bin/bash` or `#!/usr/bin/env bash`
-    - 外部パッケージのインストール一切不要
+    2. **Meta-predicates (findall, bagof, setof) compatibility with explicit stack**:
+       Our meta-predicates like `findall/3` collect all solutions from a goal.
+       Previously they iterated over the generator from `_execute_body_direct`.
+       After conversion, GoalFrame.step() returns PushFrame/YieldEnv instead of direct BindingEnvironments.
+       What are the typical compatibility issues?
+       How do WAM-based Prolog implementations handle findall with explicit stacks?
 
-    ## Codex CLI コマンド（軍師召喚）
+    3. **Infinite loop patterns in explicit stack execution**:
+       Our `tak` benchmark (Takeuchi function) previously ran in ~1-2 seconds but now hangs.
+       The tak function uses deeply nested arithmetic (`is/2`) and recursive predicate calls.
+       What are the common causes of infinite loops when converting to explicit stack?
+       Specifically:
+       - Frame state machine getting stuck (returning None forever)
+       - GoalFrame.step() re-initializing instead of advancing
+       - Choice points not being properly exhausted
+       - StopIteration not propagating correctly between parent-child frames
 
-    ```bash
-    codex exec --model gpt-5.2-codex --sandbox read-only --full-auto "Design and write a bash script that extracts a markdown section by heading. CRITICAL: Use ONLY bash + awk. NO Python, NO Perl, NO Ruby.
+    4. **Prolog WAM implementations: how choice points work with explicit stacks**:
+       In Warren's Abstract Machine (WAM), how are choice points managed?
+       How does backtracking work without generator/coroutine mechanisms?
+       What are the key differences between WAM-style and our PushFrame/YieldEnv approach?
 
-    ## Requirements
-    - Input: a markdown file path and a heading text (e.g. '## Section Title')
-    - Output: the full content of that section, from the heading line to just before the next heading of the same or higher level
-    - Child headings are included (e.g. specifying '##' includes all '###' under it)
-    - '---' horizontal rules are NOT treated as section boundaries, just plain text
-    - Heading level is determined by counting '#' characters
-    - A heading line must have a space after the '#' characters (e.g. '## Foo' is a heading, '##Foo' is not)
+    5. **Best practices for testing generator→stack conversions**:
+       What testing strategies catch the most common regressions?
+       How to systematically verify that all execution paths are covered?
 
-    ## Technical Constraints (STRICT)
-    - bash + awk ONLY. No Python, Perl, Ruby, or any scripting language
-    - POSIX-compatible awk preferred (minimize gawk extensions)
-    - Shebang: #!/usr/bin/env bash
-    - No external package installation
-    - Must handle: heading not found (exit 1), section at end of file (output to EOF), Unicode/emoji in headings
-
-    ## Deliverables
-    1. Complete bash script using awk for the parsing logic
-    2. Usage examples
-    3. Edge case handling notes
-
-    Do not include thinking process. Output only the final result." 2>/dev/null > /home/quieter/projects/multi-agent-bakuhu/queue/gunshi/reports/report_cmd_054_md_section_extract_awk.md
+    Focus on practical patterns and known pitfalls. Provide concrete examples where possible.
+    Do not include thinking process. Output only the final result.
     ```
 
-    ## 結果保存先
-    - queue/gunshi/reports/report_cmd_054_md_section_extract_awk.md
+    報告先: queue/shinobi/reports/report_cmd_096_regression_patterns.md
 
-    ## 完了後
-    1. 報告YAMLを作成: queue/denrei/reports/denrei1_report.yaml
-    2. 家老ペイン (multiagent:agents.0) に send-keys で報告
+    ## 依頼2: 軍師（Codex）への調査依頼
 
-  external_agent: gunshi
-  status: done
-  timestamp: "2026-02-06T16:00:00"
+    忍びの調査完了後に実行せよ。
+
+    軍師の作業ディレクトリ: /home/quieter/projects/pyprolog/
+
+    プロンプト:
+    ```
+    Analyze the Phase 2 regression in the pyprolog Prolog interpreter and design a systematic fix plan.
+
+    CONTEXT FILES TO READ:
+    1. Read pyprolog/runtime/execution_frames.py - the frame definitions (PushFrame, YieldEnv, GoalFrame, etc.)
+    2. Read pyprolog/runtime/logic_interpreter.py - the main interpreter with _execute_body_iterative
+    3. Read pyprolog/runtime/interpreter.py - the runtime with execute_iterative()
+    4. Read queue/reports/cmd_096_test_failures.md - the complete list of 138 failing tests with error categories (created by ashigaru)
+    5. Read queue/reports/cmd_096_git_diff.md - the git diff summary (created by ashigaru)
+    6. Read queue/shinobi/reports/report_cmd_096_regression_patterns.md - regression pattern analysis from Gemini
+
+    YOUR TASKS:
+
+    1. **ROOT CAUSE CATEGORIZATION**:
+       Analyze the 138 failing tests and categorize them by ROOT CAUSE (not by error type).
+       Root causes might include:
+       - (A) execute_iterative() in interpreter.py not handling PushFrame/YieldEnv for all frame types
+       - (B) findall/bagof/setof calling _execute_body_direct which no longer returns BindingEnvironment directly
+       - (C) GoalFrame state machine bugs (infinite loop, incorrect state transitions)
+       - (D) CutException propagation incorrect in explicit stack
+       - (E) Environment (BindingEnvironment) sharing/copying issues
+       - (F) Other execution paths still using old API
+       Group the 138 tests by these root causes.
+
+    2. **FIX PRIORITY MATRIX**:
+       For each root cause category:
+       - Number of tests affected
+       - Estimated fix complexity (trivial/moderate/complex)
+       - Risk of introducing new regressions
+       - Dependencies between fixes (which must be fixed first)
+
+    3. **SYSTEMATIC FIX PLAN**:
+       Design a fix plan that is NOT ad-hoc. The plan should:
+       - Fix root causes in dependency order
+       - Include verification steps after each fix
+       - Minimize risk of new regressions
+       - Be implementable in phases
+
+    4. **tak_light HANG ANALYSIS**:
+       Based on the code, analyze why tak(18,12,6,X) would hang.
+       The Takeuchi function uses:
+       - Arithmetic comparison (X =< Y)
+       - Arithmetic evaluation (X1 is X - 1)
+       - Recursive calls: tak(X1,Y,Z,A), tak(Y1,Z,X,B), tak(Z1,X,Y,C), tak(A,B,C,Answer)
+       Trace the execution path through the new frame-driven code and identify where the infinite loop occurs.
+
+    5. **152 MISSING TESTS ANALYSIS**:
+       Why did the total test count drop from 624 to 472?
+       Are tests being skipped, crashing, or timing out?
+       How to recover these tests?
+
+    Output in Japanese. Do not include thinking process. Output only the final result.
+    ```
+
+    報告先: queue/gunshi/reports/report_cmd_096_fix_plan.md
+
+    ## 手順
+    1. 忍び（Gemini）を召喚し、依頼1を実行
+    2. 報告を queue/shinobi/reports/report_cmd_096_regression_patterns.md に保存
+    3. **足軽1・足軽2の報告完了を待つ必要あり**:
+       - queue/reports/cmd_096_test_failures.md が存在するか確認
+       - queue/reports/cmd_096_git_diff.md が存在するか確認
+       - 両方存在しない場合は 5分待ってから再確認（最大3回）
+    4. 軍師（Codex）を召喚し、依頼2を実行（作業ディレクトリは /home/quieter/projects/pyprolog/）
+    5. 報告を queue/gunshi/reports/report_cmd_096_fix_plan.md に保存
+    6. 完了したら家老に報告
+
+    ## 報告
+    queue/denrei/reports/denrei1_report.yaml に完了報告を記載し、家老を起こせ。
+    家老ペイン: multiagent:agents.0
+
+  external_agent: "shinobi,gunshi"
+  status: completed
+  timestamp: "2026-02-10T08:15:00"

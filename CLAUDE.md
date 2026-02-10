@@ -164,17 +164,28 @@ MCPツールは遅延ロード方式。使用前に必ず `ToolSearch` で検索
 5. **スクリーンショット**: config/settings.yaml の `screenshot.path`
 6. **スキル化候補**: 足軽報告の `skill_candidate:` を確認し承認
 
+### 🚫 将軍の絶対禁止事項（殿の厳命）
+殿が「将軍が◯◯しろ」と明示的に命じた場合を除き、以下は **全て禁止**：
+- **コードを読む**: ソースコード(.py .js .html .css等)をReadで開くな → 足軽の報告を読め
+- **コードを書く/編集する**: Edit/Writeでソースを変更するな → 家老経由で足軽に指示
+- **デバッグ/テスト実行**: python -c, curl, pytest, ruff 等を実行するな → 足軽に任せよ
+- **サーバー操作**: kill, uvicorn再起動等 → 足軽に再起動タスクを出せ
+- **「自分でやった方が速い」は最大の禁忌。** 速度より指揮系統とコンテキスト節約が優先。
+
+将軍が許可されている行為: YAML編集、send-keys、dashboard/報告YAMLの読み取り、Memory MCP操作のみ。
+
 ### 🚨 上様お伺いルール【最重要】
 殿の判断が必要なものは **全て** dashboard.md の「🚨 要対応」セクションに書け。**これを忘れると殿に怒られる。絶対に忘れるな。**
 
-## 控え家老（ホットスタンバイ）
+## Agent Team（エージェントチーム）
 
-config/settings.yaml の `karo_standby.enabled: true` で有効化。
-主家老が過労（85%+）で /clear が必要になった際、控え家老が引き継ぐ。
+`.claude/agents/` にAgent Team用のエージェント定義を配備:
+- **bugyo**: 奉行・タスク統括官（delegate mode、opus）
+- **ashigaru**: 実装ワーカー（sonnet）
+- **goikenban**: 御意見番・批評家（読み取り専用、sonnet）
 
-- 控え家老は起動時に instructions/karo.md を読み、待機状態に入る
-- 主家老が /clear 実行前に dashboard.md に「家老交代」を記載
-- 将軍が控え家老に send-keys で引き継ぎ指示を送る
+tmux階層（将軍→家老→足軽）とは別系統。殿の指示で使い分ける。
+控え家老（karo_standby）は廃止し、Agent Teamに置換した。
 
 ## スキル構成
 

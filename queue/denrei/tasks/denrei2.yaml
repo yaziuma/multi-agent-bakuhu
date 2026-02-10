@@ -1,122 +1,75 @@
 # 伝令2専用タスクファイル
 task:
-  task_id: denrei_clear_compact_supplement
-  parent_cmd: cmd_034
-  priority: high
+  task_id: subtask_094_d2
+  parent_cmd: cmd_094
+  priority: critical
   description: |
-    【補完調査】Claude Code /clear vs /compact 調査の欠落部分を補完せよ。
+    ## 概要
+    cmd_094: _execute_body_direct 完全iterative化のため、軍師（Codex）に設計を依頼せよ。
 
     ## 背景
-    伝令1が忍びに依頼した調査報告（report_cmd_034_clear_compact.md）が
-    53行で途中切断されている。セクション1〜3は取得できたが、
-    セクション4〜6（コスト分析・最適化戦略・コミュニティ知見）が欠落。
-    日本語版も欠落している。
+    殿が pyprolog を別環境でテストし、分析ドキュメントを作成された。
+    docs/benchmark_heavy_timeout_analysis_ja.md に根本原因分析がある。
+    3件のheavyベンチマーク全てで _execute_body_direct の HYBRID（再帰残存）が原因。
 
-    ## 調査項目（欠落部分のみ）
+    ## 軍師（Codex）への設計依頼
 
-    ### セクション4: コスト分析 /clear vs /compact
-    - /clear 後の復帰にかかる合計トークン数（CLAUDE.md再読み込み + YAML読み込み等）
-    - /compact 後のsummaryサイズと復帰コスト
-    - API課金への影響（入力トークン vs 出力トークンの比率）
-    - 1日の運用で /clear 10回 vs /compact 5回 のコスト比較シミュレーション
-    - どのような状況でどちらがコスト効率が良いか
+    軍師の作業ディレクトリ: /home/quieter/projects/pyprolog/
 
-    ### セクション5: マルチエージェント最適化戦略
-    - 足軽型（短期・単一タスク）: /clear が有利な理由と運用パターン
-    - 家老型（中期・複数タスク管理）: コンテキスト閾値別の最適戦略
-    - 将軍型（長期・全体統括）: /compact 優先の理由と限界
-    - Memory MCP を使ったコンテキスト永続化の具体的なパターン
-      - 何をMemory MCPに保存すべきか
-      - 何をYAMLに保存すべきか
-      - 復帰時の読み込み順序の最適化
-    - 「控えの家老」パターンの技術的実現可能性
-      - 1つのtmuxペインで稼働する家老が倒れた時
-      - 別ペインの控え家老にコンテキストを引き継ぐ方法
-      - 状態のシリアライズ・デシリアライズのパターン
+    プロンプト:
+    ```
+    Design a FULL ITERATIVE conversion of _execute_body_direct for the pyprolog Prolog interpreter.
 
-    ### セクション6: コミュニティの知見・公式情報
-    - Claude Code の GitHub リポジトリ (anthropics/claude-code) の Issue/Discussion から:
-      - コンテキスト管理に関する議論
-      - /clear や /compact のバグ報告・改善要望
-      - マルチエージェント利用者の知見
-    - Anthropic 公式ブログ・ドキュメントの記載
-    - 「claude code multi agent」「claude code context management」等で検索
-    - 既知の制限事項・注意点
+    CONTEXT:
+    - Read docs/benchmark_heavy_timeout_analysis_ja.md for the problem analysis
+    - Read pyprolog/runtime/logic_interpreter.py, focusing on:
+      - _execute_body_direct (around line 973) - HYBRID implementation, has recursion remaining
+      - _execute_conjunction_iterative (around line 1109) - already fully iterative (Phase 1 done)
+      - _execute_single_goal (the function that _execute_body_direct dispatches to)
+    - Read pyprolog/runtime/execution_frames.py for existing frame types
 
-    ## Gemini CLI コマンド
+    YOUR TASKS:
 
-    ```bash
-    gemini -p "Claude Code /clear vs /compact: Supplementary Analysis (Sections 4-6)
+    1. **COMPLETE RECURSION PATH MAPPING**: Identify EVERY recursive call path in and around _execute_body_direct:
+       - _execute_body_direct → _execute_body_direct (disjunction, negation, if-then-else)
+       - _execute_body_direct → _execute_single_goal → solve_goal_direct → _execute_body_direct
+       - Any other indirect recursion paths
+       Map each with exact line numbers.
 
-    This is a SUPPLEMENTARY research to complete a partial report.
-    The first 3 sections (command specs, context window) are already done.
-    Focus ONLY on sections 4, 5, and 6 below.
+    2. **DESIGN the full iterative conversion**:
+       - Define new frame types needed (DisjunctionFrame, NegationFrame, IfThenElseFrame, etc.)
+       - Design the main iteration loop that replaces all recursion
+       - Show how conjunction (already iterative) integrates with the new design
+       - Handle CutException propagation in the iterative model
+       - Handle generator-based backtracking (yield) without recursion
 
-    ## Section 4: Cost Analysis
+    3. **CONCRETE CODE DESIGN**: For each recursive call site, show:
+       - Current code (with line number)
+       - Proposed replacement
+       - How state is managed on the explicit stack
 
-    Provide a detailed cost comparison between /clear and /compact:
+    4. **INTEGRATION with existing _execute_conjunction_iterative**:
+       - The conjunction iterative implementation currently calls _execute_body_direct recursively
+       - Show how to merge conjunction iteration into the unified iterative loop
 
-    1. Token Cost Breakdown:
-       - /clear recovery cost: loading CLAUDE.md (~2000 tokens) + Memory MCP read (~700 tokens) + task YAML (~800 tokens) + instructions (~1500 tokens) = total recovery cost
-       - /compact cost: summary generation (output tokens) + summary as input for next turn
-       - Which approach uses more API tokens per cycle?
+    5. **TEST PLAN**: Which tests validate the conversion? Expected behavior changes?
 
-    2. Simulation:
-       - Agent running for 8 hours, hitting context limits every 30 minutes
-       - Scenario A: /clear every time (16 clears × recovery cost)
-       - Scenario B: /compact 3 times then /clear (mix strategy)
-       - Which is cheaper? Which preserves more useful context?
+    6. **RISK ANALYSIS**: What could break? Edge cases to watch for?
 
-    3. Cost Efficiency Rules:
-       - When is /clear more cost-effective?
-       - When is /compact more cost-effective?
-       - What is the optimal strategy for each agent type?
-
-    ## Section 5: Multi-Agent Optimization Strategies
-
-    For a system with these agent types:
-    - Short-lived workers (ashigaru): execute single tasks, then idle
-    - Medium-lived manager (karo): distribute tasks, collect reports, manage state
-    - Long-lived orchestrator (shogun): oversee everything, make strategic decisions
-
-    Provide specific strategies:
-    1. For workers: Why /clear is preferred, optimal timing
-    2. For manager: Context threshold management (60%/75%/85% rules)
-    3. For orchestrator: /compact vs /clear decision tree
-    4. Memory MCP patterns:
-       - What to store in Memory MCP vs YAML files vs context
-       - Optimal read order during recovery
-       - Avoiding redundant data across layers
-    5. Hot-standby pattern:
-       - Can you hand off context from one Claude Code instance to another?
-       - State serialization approaches (YAML, markdown summary)
-       - Recovery protocol for standby agent activation
-
-    ## Section 6: Community Knowledge
-
-    Search for and report on:
-    1. GitHub anthropics/claude-code issues about:
-       - Context management
-       - /clear and /compact behavior
-       - Auto-compaction triggers and thresholds
-       - Multi-agent or multi-session usage
-    2. Blog posts and articles about Claude Code context optimization
-    3. Known bugs, limitations, and workarounds
-    4. Any upcoming features related to context management
-
-    Be specific. Include URLs, issue numbers, and direct quotes where possible.
-    Output in BOTH English and Japanese (日本語訳も含めよ).
-    Format as clean markdown with clear section headers." 2>/dev/null > /home/quieter/projects/multi-agent-bakuhu/queue/shinobi/reports/report_cmd_034_clear_compact_supplement.md
+    Output in Japanese. Do not include thinking process. Output only the final result.
     ```
 
-    ## 結果保存先
-    - queue/shinobi/reports/report_cmd_034_clear_compact_supplement.md
+    報告先: queue/gunshi/reports/report_cmd_094_body_direct_design.md
 
-    ## 完了後
-    1. 報告YAMLを作成: queue/denrei/reports/denrei2_report.yaml
-    2. 家老ペイン (multiagent:0.0) に send-keys で報告
-       ※ 将軍が直接確認するため、家老がビジーでも問題なし
+    ## 手順
+    1. 軍師（Codex）を召喚し、上記プロンプトで設計依頼を実行
+    2. 報告を queue/gunshi/reports/report_cmd_094_body_direct_design.md に保存
+    3. 完了報告を書いて家老を起こせ
 
-  external_agent: shinobi
-  status: assigned
-  timestamp: "2026-02-06T03:15:00"
+    ## 報告
+    queue/denrei/reports/denrei2_report.yaml に完了報告を記載し、家老を起こせ。
+    家老ペイン: multiagent:agents.0
+
+  external_agent: gunshi
+  status: pending
+  timestamp: "2026-02-10T01:50:00"

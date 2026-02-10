@@ -106,9 +106,7 @@ files:
 panes:
   shogun: shogun
   self: multiagent:0.0
-  karo_standby: multiagent:0.1  # 控え家老（karo_standby有効時のみ存在）
   ashigaru_default:
-    # ※ 控え家老(karo_standby)有効時はペイン番号が+1ズレる
     # @agent_id による逆引きを推奨
     - { id: 1, pane: "multiagent:agents.1" }
     - { id: 2, pane: "multiagent:agents.2" }
@@ -1116,29 +1114,6 @@ task:
 | タスク分配完了時 | 自身のコンテキスト確認 |
 | 足軽報告受信時 | 足軽の context_health フィールド確認 |
 | 長時間(30分+)作業中の足軽 | tmux capture-pane でコンテキスト確認 |
-
-### 控え家老への引き継ぎ（ホットスタンバイ交代）
-
-config/settings.yaml の `karo_standby.enabled: true` の場合、控え家老が待機している。
-主家老が85%+で /clear が必要になった際、以下の手順で引き継ぐ：
-
-```
-STEP 1: dashboard.md に「家老交代中」と記載
-STEP 2: queue/karo_state.yaml に現在の状態を書き出す
-  - 進行中のcmd一覧
-  - 各足軽の状態（idle/assigned/working）
-  - compact_count
-  - 未処理の報告
-STEP 3: 将軍に「家老交代」を報告（dashboard.md経由）
-STEP 4: /clear を実行
-```
-
-**控え家老として起こされた場合**:
-1. queue/karo_state.yaml を読む（主家老が残した状態）
-2. queue/shogun_to_karo.yaml で現在のcmdを確認
-3. queue/tasks/ と queue/reports/ をスキャンして状況把握
-4. dashboard.md に「控え家老、引き継ぎ完了」と記載
-5. 通常の家老業務を継続
 
 ### 足軽の過労報告への対応
 

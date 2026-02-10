@@ -1,0 +1,53 @@
+#!/usr/bin/expect -f
+# auto_approve.exp - Claude Code の許可プロンプトを自動承認するスクリプト
+#
+# 使用方法:
+#   expect scripts/auto_approve.exp "claude コマンド引数"
+#
+# 例:
+#   expect scripts/auto_approve.exp "claude -p 'Hello'"
+
+# タイムアウト設定（秒）- 長い処理に対応
+set timeout 300
+
+# 引数からコマンドを取得
+set command [lindex $argv 0]
+
+# Claude Code を起動
+spawn bash -c $command
+
+# 許可プロンプトのパターンを待機して自動応答
+# 複数のパターンに対応
+expect {
+    # パターン1: [y/N] 形式
+    -re {\[y/N\]\??} {
+        send "y\r"
+        exp_continue
+    }
+    # パターン2: [Y/n] 形式
+    -re {\[Y/n\]\??} {
+        send "y\r"
+        exp_continue
+    }
+    # パターン3: "Allow?" や "Proceed?" 形式
+    -re {(Allow|Proceed|Continue|Confirm)\?} {
+        send "y\r"
+        exp_continue
+    }
+    # パターン4: "Press Enter to continue"
+    -re {Press Enter|press enter|Press ENTER} {
+        send "\r"
+        exp_continue
+    }
+    # タイムアウト
+    timeout {
+        puts "Timeout waiting for response"
+        exit 1
+    }
+    # 正常終了
+    eof {
+        # 終了コードを取得して返す
+        catch wait result
+        exit [lindex $result 3]
+    }
+}
