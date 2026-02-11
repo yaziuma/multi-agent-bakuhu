@@ -252,13 +252,29 @@ Shogun's permitted actions: YAML editing, send-keys, reading dashboard/reports, 
 
 # Agent Team (bakuhu)
 
-`.claude/agents/` contains Agent Team definitions:
-- **bugyo**: Project coordinator (delegate mode, opus)
-- **ashigaru**: Implementation worker (sonnet)
-- **goikenban**: Code reviewer (read-only, sonnet)
+`.claude/agents/` directory contains Agent Team definitions for Task tool coordination:
 
-Separate from tmux hierarchy (Shogun → Karo → Ashigaru). Use as directed by Lord.
-Karo standby has been replaced by Agent Team.
+| Agent | Role | Mode | Model |
+|-------|------|------|-------|
+| **bugyo** | Project coordinator (task splitting, team management) | delegate | opus |
+| **ashigaru** | Implementation worker | default | sonnet |
+| **goikenban** | Code reviewer (read-only, no file edits) | read-only | sonnet |
+
+**Command chain**: Lord/Shogun → Karo → Bugyo → Ashigaru/Goikenban
+- Shogun does NOT spawn Agent Team directly (violates chain of command)
+- Karo spawns bugyo via Task tool when ordered
+- Bugyo delegates to ashigaru (implementation) and goikenban (review)
+- Results: Ashigaru/Goikenban → Bugyo → Karo → Dashboard
+
+**Relationship with tmux hierarchy**:
+
+| Aspect | tmux Agents (Karo/Ashigaru 1-8) | Agent Team (Bugyo/Ashigaru/Goikenban) |
+|--------|----------------------------------|---------------------------------------|
+| Lifespan | Long-running (persistent) | Task-scoped (finite) |
+| Process | Independent tmux panes | Nested in Karo's process |
+| Communication | inbox_write.sh + YAML | Task tool messages |
+
+Both layers coexist. Karo coordinates tmux ashigaru AND Agent Team members.
 
 # Skills Configuration (bakuhu)
 
@@ -267,11 +283,14 @@ skills/                        # Core skills (git-tracked)
   ├─ context-health.md         # /compact templates, mixed strategies
   ├─ shinobi-manual.md         # Shinobi capabilities, summoning protocol
   ├─ architecture.md           # 4-layer model, hierarchy, project mgmt
+  ├─ spec-before-action.md     # 仕様先行の原則（全階層必読）
   ├─ skill-creator/            # Skill auto-generation meta-skill (from fork)
   └─ generated/                # Dev project skills (git-ignored)
       ├─ async-rss-fetcher.md
       └─ ...
 ```
+
+**全エージェント必読**: `skills/spec-before-action.md` — 仕様が完全確定するまで下流に実装指示を送るな。違反は殿の逆鱗に触れる。
 
 # Git Commit Rule (Lord's absolute order - all agents)
 
