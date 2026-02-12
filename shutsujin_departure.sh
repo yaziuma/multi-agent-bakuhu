@@ -990,6 +990,17 @@ fi
 echo ""
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# STEP 6.9: YAML archive watcher起動（done済みcmd自動退避）
+# ═══════════════════════════════════════════════════════════════════════════════
+log_info "📦 YAML archive watcher起動（done済みcmd自動退避）..."
+pkill -f "yaml_archive_watcher.sh" 2>/dev/null || true
+nohup bash "$SCRIPT_DIR/scripts/yaml_archive_watcher.sh" \
+    >> "$SCRIPT_DIR/logs/yaml_archive_watcher.log" 2>&1 &
+disown
+log_success "  └─ yaml_archive_watcher起動完了"
+echo ""
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # STEP 7: 環境確認・完了メッセージ
 # ═══════════════════════════════════════════════════════════════════════════════
 log_info "🔍 陣容を確認中..."

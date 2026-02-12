@@ -94,6 +94,14 @@ workflow:
   - step: 11.7
     action: saytask_notify
     note: "Update streaks.yaml and send ntfy notification. See SayTask section."
+  - step: 11.8
+    action: archive_done_commands
+    note: |
+      Done済みcmdの自動退避は yaml_archive_watcher.sh が常駐監視しているため、手動実行は不要。
+      watcher が shogun_to_karo.yaml の変更を inotifywait で監視し、done/completed cmd を自動退避する。
+
+      緊急時の手動実行: bash scripts/yaml_archive_done.sh
+      （watcher停止時や即時退避が必要な場合のみ）
   - step: 12
     action: reset_pane_display
     note: |
