@@ -20,6 +20,32 @@
 #   4分〜 : /clear送信（5分に1回まで。強制リセット+YAML再読）
 # ═══════════════════════════════════════════════════════════════
 
+# ─── Dynamic pane resolution ───
+# Resolve pane_target from @agent_id custom variable.
+# This makes watcher resilient to pane number changes when ashigaru/denrei count changes.
+resolve_pane() {
+    local target_agent="$1"
+    local pane
+    for pane in $(tmux list-panes -s -t multiagent -F '#{pane_id}' 2>/dev/null); do
+        local aid
+        aid=$(tmux display-message -t "$pane" -p '#{@agent_id}' 2>/dev/null || true)
+        if [ "$aid" = "$target_agent" ]; then
+            echo "$pane"
+            return 0
+        fi
+    done
+    # Fallback: check shogun session if not found in multiagent
+    for pane in $(tmux list-panes -s -t shogun -F '#{pane_id}' 2>/dev/null); do
+        local aid
+        aid=$(tmux display-message -t "$pane" -p '#{@agent_id}' 2>/dev/null || true)
+        if [ "$aid" = "$target_agent" ]; then
+            echo "$pane"
+            return 0
+        fi
+    done
+    return 1
+}
+
 # ─── Testing guard ───
 # When __INBOX_WATCHER_TESTING__=1, only function definitions are loaded.
 # Argument parsing, inotifywait check, and main loop are skipped.
@@ -28,16 +54,28 @@ if [ "${__INBOX_WATCHER_TESTING__:-}" != "1" ]; then
     set -euo pipefail
 
     SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-    AGENT_ID="$1"
-    PANE_TARGET="$2"
+    AGENT_ID="${1:-}"
+    PANE_TARGET="${2:-}"  # Optional: if empty, will be resolved from @agent_id
     CLI_TYPE="${3:-claude}"  # CLI種別（claude/codex/copilot）。未指定→claude（後方互換）
 
     INBOX="$SCRIPT_DIR/queue/inbox/${AGENT_ID}.yaml"
     LOCKFILE="${INBOX}.lock"
 
-    if [ -z "$AGENT_ID" ] || [ -z "$PANE_TARGET" ]; then
-        echo "Usage: inbox_watcher.sh <agent_id> <pane_target> [cli_type]" >&2
+    if [ -z "$AGENT_ID" ]; then
+        echo "Usage: inbox_watcher.sh <agent_id> [pane_target] [cli_type]" >&2
+        echo "  pane_target: optional (defaults to dynamic resolution via @agent_id)" >&2
         exit 1
+    fi
+
+    # Dynamic pane resolution if pane_target not provided
+    if [ -z "$PANE_TARGET" ]; then
+        echo "[$(date)] Resolving pane for agent: $AGENT_ID" >&2
+        PANE_TARGET=$(resolve_pane "$AGENT_ID")
+        if [ -z "$PANE_TARGET" ]; then
+            echo "[inbox_watcher] ERROR: Cannot find pane for agent $AGENT_ID via @agent_id" >&2
+            exit 1
+        fi
+        echo "[$(date)] Resolved pane: $PANE_TARGET for agent $AGENT_ID" >&2
     fi
 
     # Initialize inbox if not exists

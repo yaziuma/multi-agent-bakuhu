@@ -16,40 +16,44 @@ ensure_inbox_file() {
     fi
 }
 
-pane_exists() {
-    local pane="$1"
-    tmux list-panes -a -F "#{session_name}:#{window_name}.#{pane_index}" 2>/dev/null | grep -qx "$pane"
+agent_exists() {
+    local agent="$1"
+    # Check if agent pane exists by @agent_id (dynamic resolution)
+    local pane
+    for pane in $(tmux list-panes -a -F '#{pane_id}' 2>/dev/null); do
+        local aid
+        aid=$(tmux display-message -t "$pane" -p '#{@agent_id}' 2>/dev/null || true)
+        if [ "$aid" = "$agent" ]; then
+            return 0
+        fi
+    done
+    return 1
 }
 
 start_watcher_if_missing() {
     local agent="$1"
-    local pane="$2"
-    local log_file="$3"
-    local cli
+    local log_file="$2"
 
     ensure_inbox_file "$agent"
-    if ! pane_exists "$pane"; then
+    if ! agent_exists "$agent"; then
         return 0
     fi
 
-    if pgrep -f "scripts/inbox_watcher.sh ${agent} " >/dev/null 2>&1; then
+    if pgrep -f "scripts/inbox_watcher.sh ${agent}" >/dev/null 2>&1; then
         return 0
     fi
 
-    cli=$(tmux show-options -p -t "$pane" -v @agent_cli 2>/dev/null || echo "codex")
-    nohup bash scripts/inbox_watcher.sh "$agent" "$pane" "$cli" >> "$log_file" 2>&1 &
+    # Let inbox_watcher.sh resolve pane and cli dynamically
+    nohup bash scripts/inbox_watcher.sh "$agent" >> "$log_file" 2>&1 &
 }
 
 while true; do
-    start_watcher_if_missing "shogun" "shogun:main.0" "logs/inbox_watcher_shogun.log"
-    start_watcher_if_missing "karo" "multiagent:agents.0" "logs/inbox_watcher_karo.log"
-    start_watcher_if_missing "ashigaru1" "multiagent:agents.1" "logs/inbox_watcher_ashigaru1.log"
-    start_watcher_if_missing "ashigaru2" "multiagent:agents.2" "logs/inbox_watcher_ashigaru2.log"
-    start_watcher_if_missing "ashigaru3" "multiagent:agents.3" "logs/inbox_watcher_ashigaru3.log"
-    start_watcher_if_missing "ashigaru4" "multiagent:agents.4" "logs/inbox_watcher_ashigaru4.log"
-    start_watcher_if_missing "ashigaru5" "multiagent:agents.5" "logs/inbox_watcher_ashigaru5.log"
-    start_watcher_if_missing "ashigaru6" "multiagent:agents.6" "logs/inbox_watcher_ashigaru6.log"
-    start_watcher_if_missing "ashigaru7" "multiagent:agents.7" "logs/inbox_watcher_ashigaru7.log"
-    start_watcher_if_missing "ashigaru8" "multiagent:agents.8" "logs/inbox_watcher_ashigaru8.log"
+    start_watcher_if_missing "shogun" "logs/inbox_watcher_shogun.log"
+    start_watcher_if_missing "karo" "logs/inbox_watcher_karo.log"
+    start_watcher_if_missing "ashigaru1" "logs/inbox_watcher_ashigaru1.log"
+    start_watcher_if_missing "ashigaru2" "logs/inbox_watcher_ashigaru2.log"
+    start_watcher_if_missing "ashigaru3" "logs/inbox_watcher_ashigaru3.log"
+    start_watcher_if_missing "denrei1" "logs/inbox_watcher_denrei1.log"
+    start_watcher_if_missing "denrei2" "logs/inbox_watcher_denrei2.log"
     sleep 5
 done
