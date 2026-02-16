@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{%- block title -%}Queue Viewer - Directory Tree{%- endblock -%}
+
+{%- macro render_tree(items) -%}
+<ul class="tree-items">
+{%- for item in items -%}
+  {%- if item.is_dir -%}
+    <li class="tree-folder">
+      {%- if item.children -%}
+        <details class="tree-folder-details">
+          <summary class="tree-folder-summary">
+            <span class="tree-icon">📁</span>
+            <span class="tree-name">{{ item.name }}/</span>
+          </summary>
+          {{ render_tree(item.children) }}
+        </details>
+      {%- else -%}
+        <span class="tree-icon">📁</span>
+        <span class="tree-name">{{ item.name }}/</span>
+      {%- endif -%}
+    </li>
+  {%- else -%}
+    <li class="tree-file">
+      <span class="tree-icon">📄</span>
+      <a href="{{ base_path }}/file/{{ item.path }}" class="tree-link">{{ item.name }}</a>
+    </li>
+  {%- endif -%}
+{%- endfor -%}
+</ul>
+{%- endmacro -%}
+
+{%- block content -%}
+<div class="container">
+    <aside class="sidebar">
+        <details class="quick-access-details">
+            <summary class="quick-access-summary">📂 Quick Access</summary>
+            <ul class="quick-links">
+            <li>
+                <a href="{{ base_path }}/file/dashboard.md">📊 dashboard.md</a>
+            </li>
+            <li>
+                <a href="{{ base_path }}/file/queue/shogun_to_karo.yaml">📜 Command Queue</a>
+            </li>
+            <li>
+                <strong>📁 Tasks:</strong>
+                <ul>
+                    <li><a href="{{ base_path }}/file/queue/tasks/ashigaru1.yaml">足軽1号</a></li>
+                    <li><a href="{{ base_path }}/file/queue/tasks/ashigaru2.yaml">足軽2号</a></li>
+                </ul>
+            </li>
+            <li>
+                <strong>📬 Inbox:</strong>
+                <ul>
+                    <li><a href="{{ base_path }}/file/queue/inbox/shogun.yaml">将軍</a></li>
+                    <li><a href="{{ base_path }}/file/queue/inbox/karo.yaml">家老</a></li>
+                    <li><a href="{{ base_path }}/file/queue/inbox/ashigaru1.yaml">足軽1号</a></li>
+                    <li><a href="{{ base_path }}/file/queue/inbox/ashigaru2.yaml">足軽2号</a></li>
+                </ul>
+            </li>
+            <li>
+                <strong>📋 Reports:</strong>
+                <ul>
+                    <li><a href="{{ base_path }}/file/queue/reports/ashigaru1_report.yaml">足軽1号</a></li>
+                    <li><a href="{{ base_path }}/file/queue/reports/ashigaru2_report.yaml">足軽2号</a></li>
+                </ul>
+            </li>
+        </ul>
+        </details>
+    </aside>
+
+    <section class="main-content">
+        <h2>🗂️ Directory Tree</h2>
+
+        <div class="search-box">
+            <input type="text" name="q" id="search-input" placeholder="🔍 ファイル名で検索..."
+                   hx-get="{{ base_path }}/search"
+                   hx-trigger="input changed delay:300ms"
+                   hx-target="#tree-container"
+                   hx-swap="innerHTML"
+                   autocomplete="off">
+        </div>
+
+        <div class="tree-view" id="tree-container">
+            {{- render_tree(tree) -}}
+        </div>
+    </section>
+</div>
+{%- endblock -%}

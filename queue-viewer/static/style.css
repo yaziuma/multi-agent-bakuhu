@@ -1,0 +1,482 @@
+/* Global Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --bg-dark: #1e1e2e;
+    --bg-darker: #181825;
+    --text-light: #cdd6f4;
+    --text-muted: #9399b2;
+    --accent: #89b4fa;
+    --accent-hover: #b4befe;
+    --border: #313244;
+    --success: #a6e3a1;
+    --warning: #f9e2af;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: var(--bg-darker);
+    color: var(--text-light);
+    line-height: 1.6;
+}
+
+/* Header */
+header {
+    background: var(--bg-dark);
+    border-bottom: 2px solid var(--border);
+    padding: 1rem 2rem;
+}
+
+header h1 {
+    font-size: 1.8rem;
+    color: var(--accent);
+}
+
+header nav {
+    margin-top: 0.5rem;
+}
+
+header nav a {
+    color: var(--text-light);
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+header nav a:hover {
+    background: var(--border);
+}
+
+/* Main Container */
+main {
+    padding: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.container {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 2rem;
+}
+
+/* Sidebar */
+.sidebar {
+    background: var(--bg-dark);
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+}
+
+.sidebar h2 {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    color: var(--accent);
+}
+
+.quick-links {
+    list-style: none;
+}
+
+.quick-links li {
+    margin-bottom: 0.8rem;
+}
+
+.quick-links a {
+    color: var(--text-light);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.quick-links a:hover {
+    color: var(--accent-hover);
+}
+
+.quick-links strong {
+    display: block;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    color: var(--text-muted);
+}
+
+.quick-links ul {
+    margin-left: 1rem;
+}
+
+/* Main Content */
+.main-content {
+    background: var(--bg-dark);
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+.main-content h2 {
+    font-size: 1.4rem;
+    margin-bottom: 1rem;
+    color: var(--accent);
+}
+
+/* Search Box */
+.search-box {
+    margin-bottom: 1.5rem;
+}
+
+.search-box input[type="text"] {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    background: var(--bg-darker);
+    border: 2px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-light);
+    font-size: 1rem;
+    transition: border-color 0.2s;
+}
+
+.search-box input[type="text"]:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.search-box input[type="text"]::placeholder {
+    color: var(--text-muted);
+}
+
+.no-results {
+    color: var(--text-muted);
+    font-style: italic;
+    padding: 1rem;
+    text-align: center;
+}
+
+/* Tree View - Compact ul/li based */
+.tree-view {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.4;
+    padding: 0;
+    margin: 0;
+}
+
+.tree-view ul.tree-items {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    padding-left: 20px;
+}
+
+.tree-view ul.tree-items:first-child {
+    padding-left: 0;
+}
+
+.tree-view li {
+    padding: 2px 0;
+    display: flex;
+    align-items: center;
+}
+
+.tree-view .tree-icon {
+    width: 1.5em;
+    text-align: center;
+    margin-right: 5px;
+    flex-shrink: 0;
+}
+
+.tree-view .tree-folder {
+    color: var(--accent);
+    font-weight: bold;
+    display: block;
+}
+
+.tree-view .tree-name {
+    color: var(--accent);
+}
+
+.tree-view .tree-link {
+    color: var(--text-light);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.tree-view .tree-link:hover {
+    color: var(--accent-hover);
+    text-decoration: underline;
+}
+
+/* File Viewer */
+.file-viewer {
+    background: var(--bg-dark);
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+.file-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.file-header h2 {
+    font-size: 1.3rem;
+    color: var(--accent);
+}
+
+.badge {
+    background: var(--accent);
+    color: var(--bg-dark);
+    padding: 0.3rem 0.8rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: bold;
+}
+
+/* File Content */
+.file-content {
+    margin-bottom: 2rem;
+}
+
+.code-content {
+    overflow-x: auto;
+}
+
+.markdown-content {
+    max-width: 900px;
+    line-height: 1.8;
+}
+
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3 {
+    color: var(--accent);
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.markdown-content p {
+    margin-bottom: 1rem;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+    margin-left: 2rem;
+    margin-bottom: 1rem;
+}
+
+.markdown-content code {
+    background: var(--bg-darker);
+    padding: 0.2rem 0.4rem;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+}
+
+.markdown-content pre {
+    background: var(--bg-darker);
+    padding: 1rem;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin-bottom: 1rem;
+}
+
+.markdown-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1rem;
+}
+
+.markdown-content th,
+.markdown-content td {
+    border: 1px solid var(--border);
+    padding: 0.5rem;
+    text-align: left;
+}
+
+.markdown-content th {
+    background: var(--bg-darker);
+    font-weight: bold;
+}
+
+/* File Actions */
+.file-actions {
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+}
+
+.btn {
+    display: inline-block;
+    padding: 0.6rem 1.2rem;
+    background: var(--accent);
+    color: var(--bg-dark);
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: bold;
+    transition: background 0.2s;
+}
+
+.btn:hover {
+    background: var(--accent-hover);
+}
+
+/* Footer */
+footer {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-darker);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}
+
+/* Details element styling */
+details summary {
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+}
+
+details summary::-webkit-details-marker {
+    display: none;
+}
+
+details summary::before {
+    content: '▶ ';
+    display: inline-block;
+    transition: transform 0.2s;
+}
+
+details[open] summary::before {
+    transform: rotate(90deg);
+}
+
+/* Quick Access details */
+.quick-access-details {
+    margin-top: 0.5rem;
+}
+
+.quick-access-summary {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: var(--accent);
+    padding: 0.5rem 0;
+}
+
+.quick-access-summary::before {
+    content: '▶ ';
+}
+
+.quick-access-details[open] .quick-access-summary::before {
+    transform: rotate(90deg);
+}
+
+/* Tree folder details */
+.tree-folder-details {
+    margin: 0;
+}
+
+.tree-folder-summary {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding: 2px 0;
+}
+
+.tree-folder-summary::before {
+    content: '▶ ';
+    margin-right: 3px;
+    font-size: 0.8em;
+}
+
+.tree-folder-details[open] .tree-folder-summary::before {
+    transform: rotate(90deg);
+}
+
+.tree-folder-summary .tree-icon {
+    margin-left: 0;
+}
+
+/* Responsive Design for Mobile */
+@media (max-width: 768px) {
+    /* Container: stack vertically on mobile */
+    .container {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    /* Sidebar: full width on mobile */
+    .sidebar {
+        max-height: none;
+        overflow-y: visible;
+    }
+
+    /* Header: reduce font size */
+    header h1 {
+        font-size: 1.3rem;
+    }
+
+    /* Main content: reduce padding */
+    main {
+        padding: 1rem;
+    }
+
+    .main-content,
+    .sidebar {
+        padding: 1rem;
+    }
+
+    /* Tree view: reduce indent on mobile */
+    .tree-view ul.tree-items {
+        padding-left: 12px;
+    }
+
+    /* Quick links: reduce indent */
+    .quick-links ul {
+        margin-left: 0.5rem;
+    }
+
+    /* Font sizes: slightly smaller on mobile */
+    body {
+        font-size: 0.95rem;
+    }
+
+    /* File viewer: reduce padding */
+    .file-viewer {
+        padding: 1rem;
+    }
+
+    /* Prevent horizontal scroll */
+    body {
+        overflow-x: hidden;
+    }
+
+    pre, code {
+        overflow-x: auto;
+        word-wrap: break-word;
+        white-space: pre-wrap;
+    }
+}

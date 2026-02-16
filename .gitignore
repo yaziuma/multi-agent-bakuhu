@@ -125,3 +125,22 @@
 !.github/
 !.github/workflows/
 !.github/workflows/*.yml
+
+# queue-viewer
+!queue-viewer/
+!queue-viewer/**/*.py
+!queue-viewer/pyproject.toml
+!queue-viewer/uv.lock
+!queue-viewer/kb/**
+!queue-viewer/routers/**
+!queue-viewer/static/**
+!queue-viewer/templates/**
+!queue-viewer/tests/**
+!queue-viewer/README*
+
+# queue-viewer generated/cache
+queue-viewer/.venv/
+queue-viewer/**/__pycache__/
+queue-viewer/.pytest_cache/
+queue-viewer/.ruff_cache/
+queue-viewer/*.db

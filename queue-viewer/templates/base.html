@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Queue Viewer{% endblock %}</title>
+    <link rel="stylesheet" href="{{ base_path }}/static/style.css">
+    <script src="https://unpkg.com/htmx.org@2.0.0"></script>
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <header>
+        <h1>🏯 Multi-Agent Bakuhu - Queue Viewer</h1>
+        <nav>
+            <a href="{{ base_path }}/">🏠 Home</a>
+        </nav>
+    </header>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <p>Queue Viewer v0.1 | FastAPI + Jinja2 + htmx</p>
+    </footer>
+</body>
+</html>
