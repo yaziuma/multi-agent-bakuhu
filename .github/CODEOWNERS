@@ -1,0 +1,5 @@
+# .gitignore と .gitattributes の変更は必ずオーナーレビュー
+/.gitignore @yaziuma
+/.gitattributes @yaziuma
+# Claude Code設定ファイル（hookなど）の変更もレビュー
+/.claude/ @yaziuma
