@@ -5,6 +5,12 @@
 
 # Step 1: Deny everything
 *
+# Security deny patterns (CI requires these explicitly)
+.env*
+secrets*
+credentials*
+*.key
+id_rsa*
 
 # Step 2: Allow directory traversal (contents must be individually allowed)
 !*/

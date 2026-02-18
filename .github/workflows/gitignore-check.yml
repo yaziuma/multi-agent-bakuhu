@@ -1,0 +1,81 @@
+name: GitIgnore Guardian CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  gitignore-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check .gitignore format
+        run: |
+          echo "::group::Checking .gitignore format"
+
+          # Check if .gitignore exists
+          if [ ! -f .gitignore ]; then
+            echo "::error::.gitignore not found"
+            exit 1
+          fi
+
+          # Check if .gitignore starts with whitelist pattern (first non-comment line is "*")
+          FIRST_NON_COMMENT=$(grep -v '^#' .gitignore | grep -v '^$' | head -n 1)
+          if [ "$FIRST_NON_COMMENT" != "*" ]; then
+            echo "::error::.gitignore must use whitelist format (first non-comment line should be '*')"
+            echo "Found: $FIRST_NON_COMMENT"
+            exit 1
+          fi
+
+          echo "✅ .gitignore uses whitelist format"
+          echo "::endgroup::"
+
+      - name: Check security deny patterns
+        run: |
+          echo "::group::Checking security deny patterns"
+
+          # Security patterns that MUST be denied
+          REQUIRED_PATTERNS=(
+            ".env*"
+            "secrets*"
+            "credentials*"
+            "*.key"
+            "id_rsa*"
+          )
+
+          for pattern in "${REQUIRED_PATTERNS[@]}"; do
+            if ! grep -qF "$pattern" .gitignore; then
+              echo "::error::Missing security deny pattern: $pattern"
+              exit 1
+            fi
+            echo "✅ Found deny pattern: $pattern"
+          done
+
+          echo "::endgroup::"
+
+      - name: Check .gitattributes CRLF prevention
+        run: |
+          echo "::group::Checking .gitattributes CRLF prevention"
+
+          # Check if .gitattributes exists
+          if [ ! -f .gitattributes ]; then
+            echo "::error::.gitattributes not found"
+            exit 1
+          fi
+
+          # Check if .gitattributes contains "* text=auto eol=lf"
+          if ! grep -qF '* text=auto eol=lf' .gitattributes; then
+            echo "::error::.gitattributes must contain '* text=auto eol=lf' for CRLF prevention"
+            exit 1
+          fi
+
+          echo "✅ .gitattributes has CRLF prevention"
+          echo "::endgroup::"
+
+      - name: Summary
+        run: |
+          echo "::notice::All .gitignore and .gitattributes checks passed ✅"
