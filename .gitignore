@@ -69,6 +69,7 @@ config/pane_role_map.yaml.sha256
 config/session.epoch
 
 # context/ - contains external project confidential info - deny entirely
+context/
 
 # docs/ (philosophy and design docs)
 !docs/
