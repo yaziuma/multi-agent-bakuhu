@@ -1,0 +1,73 @@
+{
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(tmux display-message:*)",
+      "Bash(tmux list-panes:*)",
+      "mcp__memory__delete_entities",
+      "mcp__memory__add_observations",
+      "mcp__memory__create_entities",
+      "Bash(tmux capture-pane:*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/shogun-guard.sh"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/karo-guard.sh"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/ashigaru-guard.sh"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/denrei-guard.sh"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/global-guard.sh"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/gitignore-guardian-bash.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/shogun-write-guard.sh"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/karo-write-guard.sh"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/ashigaru-write-guard.sh"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/denrei-write-guard.sh"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/gitignore-guardian-write.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

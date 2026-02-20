@@ -1,0 +1,117 @@
+# denrei_policy.yaml - 伝令ポリシー
+# Identity分離設計書v3 セクション7 準拠
+# 伝令は実装コマンド禁止、gemini/codex許可、デフォルト許可。
+
+role: denrei
+version: "1.0"
+description: "伝令（Denrei）コマンド・書き込みガードポリシー"
+default_action: allow
+
+rules:
+  # === コマンドガード: 許可リスト ===
+  - id: DENREI_ALLOW_GEMINI
+    action: allow
+    pattern: "gemini"
+    type: command
+    description: "Gemini呼び出し許可"
+    priority: 10
+
+  - id: DENREI_ALLOW_CODEX
+    action: allow
+    pattern: "codex"
+    type: command
+    description: "Codex呼び出し許可"
+    priority: 10
+
+  - id: DENREI_ALLOW_INBOX
+    action: allow
+    pattern: "inbox_write.sh"
+    type: command
+    description: "メールボックス書き込み許可"
+    priority: 10
+
+  # === コマンドガード: 禁止リスト ===
+  - id: DENREI_DENY_PYTHON
+    action: deny
+    pattern: "python |python3 "
+    type: command
+    description: "Python直接実行禁止"
+    priority: 50
+
+  - id: DENREI_DENY_PYTEST
+    action: deny
+    pattern: "pytest"
+    type: command
+    description: "テスト直接実行禁止"
+    priority: 50
+
+  - id: DENREI_DENY_NPM
+    action: deny
+    pattern: "npm "
+    type: command
+    description: "npm直接実行禁止"
+    priority: 50
+
+  - id: DENREI_DENY_NODE
+    action: deny
+    pattern: "node "
+    type: command
+    description: "node直接実行禁止"
+    priority: 50
+
+  - id: DENREI_DENY_RUFF
+    action: deny
+    pattern: "ruff "
+    type: command
+    description: "Lint直接実行禁止"
+    priority: 50
+
+  - id: DENREI_DENY_UVICORN
+    action: deny
+    pattern: "uvicorn"
+    type: command
+    description: "サーバー操作禁止"
+    priority: 50
+
+  # === 書き込みガード ===
+  - id: DENREI_WRITE_ALLOW_QUEUE_YAML
+    action: allow
+    pattern: "queue/.*\\.yaml$"
+    type: write_path
+    description: "queue配下YAML書き込み許可"
+    priority: 10
+
+  - id: DENREI_WRITE_ALLOW_DENREI_MEMORY
+    action: allow
+    pattern: "denrei\\.md$"
+    type: write_path
+    description: "伝令メモリファイル書き込み許可"
+    priority: 10
+
+  - id: DENREI_WRITE_DENY_SOURCE_CODE
+    action: deny
+    pattern: "\\.(py|js|ts|jsx|tsx|html|css|scss)$"
+    type: write_path
+    description: "ソースコード書き込み禁止"
+    priority: 50
+
+  - id: DENREI_WRITE_DENY_CLAUDE_DIR
+    action: deny
+    pattern: "\\.claude/"
+    type: write_path
+    description: ".claude/配下書き込み禁止"
+    priority: 50
+
+  - id: DENREI_WRITE_DENY_INSTRUCTIONS
+    action: deny
+    pattern: "instructions/"
+    type: write_path
+    description: "指示書書き込み禁止"
+    priority: 50
+
+  - id: DENREI_WRITE_DENY_OTHER_MEMORY
+    action: deny
+    pattern: "(shogun|karo|ashigaru)\\.md$"
+    type: write_path
+    description: "他役職メモリ書き込み禁止"
+    priority: 50

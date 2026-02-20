@@ -262,6 +262,65 @@ This unified format enables:
 - Consistent information management across all projects
 - Easy handoff between Ashigaru workers
 
+### Identity Isolation v3 (Role-Based Access Control)
+
+Bakuhu enforces role boundaries through **Claude Code PreToolUse hooks**. Each agent can only take actions appropriate to its role — enforced at the tool call level, not by convention.
+
+#### Identity resolution
+
+Every agent's identity is resolved from its **tmux pane ID** via `config/pane_role_map.yaml` — never from MEMORY.md or any user-writable variable. This prevents identity contamination across sessions (a critical bug discovered in 2026-02-20 where agents were impersonating other roles by reading shared MEMORY.md).
+
+```
+Session startup (shutsujin_departure.sh)
+    ↓
+Generates pane_role_map.yaml: { %0: shogun, %1: karo, %2: ashigaru, ... }
+Records sha256sum → pane_role_map.yaml.sha256
+Records epoch → config/session.epoch
+Sets hook_common.sh to read-only (chmod 444)
+    ↓
+Every tool call (PreToolUse hook):
+    get_role() → tmux pane ID → pane_role_map.yaml → role
+    check_role_match() → skip if not this role's hook
+    Apply role-specific restrictions → exit 0 (allow) or exit 2 (deny)
+```
+
+#### Two-layer hook protection
+
+Each role has two dedicated hooks: a **Bash execution guard** and a **file write guard**.
+
+| Hook | What it prevents |
+|------|----------------|
+| `karo-guard.sh` | Karo running implementation commands (python, pytest, npm, ruff) |
+| `ashigaru-write-guard.sh` | Ashigaru editing system config, instructions, or other roles' memory |
+| `denrei-write-guard.sh` | Denrei writing source code (messenger stays in its lane) |
+| `shogun-guard.sh` / `shogun-write-guard.sh` | Shogun reading/editing source code (delegates only) |
+| `global-guard.sh` | **All roles**: destructive operations (rm -rf, git push --force, sudo, kill, curl\|bash, etc.) |
+
+#### Memory separation
+
+Each role has a dedicated memory file. Cross-role writes are blocked at the hook level.
+
+| Role | Memory file | Write access |
+|------|-------------|-------------|
+| Shogun | `memory/shogun.md` | Shogun only |
+| Karo | `memory/karo.md` | Karo only |
+| Ashigaru | `memory/ashigaru.md` | Ashigaru only |
+| Denrei | `memory/denrei.md` | Denrei only |
+
+`MEMORY.md` (auto-injected into all sessions) contains **only a lookup table** mapping roles to their memory files. No identity information is stored there — writing identity info to a shared file contaminates all agents simultaneously.
+
+#### Policy-as-Data
+
+Role restrictions are defined in YAML files under `.claude/hooks/policies/`, validated against a JSON Schema. This separates **what is forbidden** (auditable data) from **how it's enforced** (code).
+
+#### Startup self-test
+
+`scripts/selftest_hooks.sh` verifies the hook system at session startup:
+- All hook files exist with correct execute permissions
+- SHA-256 integrity of `hook_common.sh` (the shared hook library)
+- JSON Schema validation of all policy YAML files
+- Zero-tolerance: any failure blocks the session
+
 ---
 
 ## External Agents
@@ -1383,12 +1442,39 @@ multi-agent-bakuhu/
 │   ├── inbox_watcher.sh      # Watch inbox changes via inotifywait
 │   ├── ntfy.sh               # Send push notifications to phone
 │   ├── ntfy_listener.sh      # Stream incoming messages from phone
-│   └── extract-section.sh    # Markdown section extractor (bash+awk)
+│   ├── extract-section.sh    # Markdown section extractor (bash+awk)
+│   ├── selftest_hooks.sh     # Hook integrity self-test (runs at startup)
+│   ├── get_pane_id.sh        # Get current tmux pane ID (%N format)
+│   ├── get_agent_role.sh     # Get role from pane_role_map.yaml
+│   └── lib/
+│       └── hook_common.sh    # Shared hook library: role resolution, path normalization, logging (chmod 444)
+│
+├── .claude/
+│   └── hooks/                # Claude Code PreToolUse hooks (Identity Isolation v3)
+│       ├── karo-guard.sh              # Karo Bash execution guard
+│       ├── karo-write-guard.sh        # Karo file write guard
+│       ├── ashigaru-guard.sh          # Ashigaru Bash execution guard
+│       ├── ashigaru-write-guard.sh    # Ashigaru file write guard
+│       ├── denrei-guard.sh            # Denrei Bash execution guard
+│       ├── denrei-write-guard.sh      # Denrei file write guard
+│       ├── shogun-guard.sh            # Shogun Bash execution guard
+│       ├── shogun-write-guard.sh      # Shogun file write guard
+│       ├── global-guard.sh            # Universal destructive operation guard (all roles)
+│       └── policies/
+│           ├── shogun_policy.yaml     # Shogun role policy (YAML)
+│           ├── karo_policy.yaml       # Karo role policy (YAML)
+│           ├── ashigaru_policy.yaml   # Ashigaru role policy (YAML)
+│           ├── denrei_policy.yaml     # Denrei role policy (YAML)
+│           ├── global_policy.yaml     # Global policy (YAML)
+│           └── policy_schema.json     # JSON Schema for policy validation
 │
 ├── config/
-│   ├── settings.yaml         # Language, ntfy, agent count, and other settings
-│   ├── ntfy_auth.env.sample  # ntfy authentication template (self-hosted)
-│   └── projects.yaml         # Project registry
+│   ├── settings.yaml              # Language, ntfy, agent count, and other settings
+│   ├── ntfy_auth.env.sample       # ntfy authentication template (self-hosted)
+│   ├── projects.yaml              # Project registry
+│   ├── pane_role_map.yaml         # Pane ID → role mapping (auto-generated at startup)
+│   ├── pane_role_map.yaml.sha256  # Integrity hash for tampering detection
+│   └── session.epoch              # Session consistency token (replay attack prevention)
 │
 ├── projects/                 # Project details (excluded from git, contains confidential info)
 │   └── <project_id>.yaml    # Full info per project (clients, tasks, Notion links, etc.)
@@ -1429,7 +1515,12 @@ multi-agent-bakuhu/
 │
 ├── context/                  # Project-specific context files
 ├── logs/archive/             # Archived commands, reports, dashboard history
-├── memory/                   # Memory MCP persistent storage
+├── memory/                   # Memory MCP persistent storage (role-separated)
+│   ├── MEMORY.md             # Lookup table only: role → memory file (no identity info)
+│   ├── shogun.md             # Shogun-only memory (write-guarded)
+│   ├── karo.md               # Karo-only memory (write-guarded)
+│   ├── ashigaru.md           # Ashigaru-only memory (write-guarded)
+│   └── denrei.md             # Denrei-only memory (write-guarded)
 ├── dashboard.md              # Real-time status board
 └── CLAUDE.md                 # System instructions (auto-loaded)
 ```
@@ -1576,6 +1667,20 @@ tmux respawn-pane -t shogun:0.0 -k 'claude --model opus --dangerously-skip-permi
 | Drag pane border | Resize panes |
 
 Even if you're not comfortable with keyboard shortcuts, you can switch, scroll, and resize panes using just the mouse.
+
+---
+
+## What's New — Identity Isolation v3
+
+Role-based access control, enforced at the hook level. Agents are now **structurally prevented** from acting outside their role.
+
+- **Identity contamination bug fixed** — Agents were reading role identity from shared MEMORY.md, causing mass impersonation (3 of 6 agents claimed to be Karo). Root cause eliminated: identity is now read from tmux pane ID → `pane_role_map.yaml` only
+- **Role-based hook system** — 9 role-specific hooks (guard + write-guard per role) + 1 global guard, all enforced via Claude Code `PreToolUse` hooks. Zero trust: every tool call is verified
+- **Memory separation** — Each role has a dedicated memory file. Cross-role writes are blocked at the hook level. MEMORY.md contains lookup table only (no identity data)
+- **Policy-as-Data** — Role restrictions defined in auditable YAML files under `.claude/hooks/policies/`, validated against JSON Schema
+- **Tamper detection** — `pane_role_map.yaml` protected by SHA-256 hash. `hook_common.sh` (shared library) protected by chmod 444 + SHA-256. Session epoch prevents stale map reuse
+- **Startup self-test** — `selftest_hooks.sh` verifies the entire hook system before any agent starts work (7 test categories, zero-tolerance)
+- **Verified by dynamic testing** — cmd_309 dynamic verification: 11/12 tests PASS. The 1 FAIL (tmux-outside behavior) is intentional by Lord's decree (Agent Team compatibility)
 
 ---
 

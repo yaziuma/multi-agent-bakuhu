@@ -1,0 +1,81 @@
+# global_policy.yaml - 全体共通ポリシー
+# Identity分離設計書v3 セクション7 準拠（忍び#7反映）
+# 全ロール共通のセキュリティポリシー。最終防衛ライン。
+
+role: global
+version: "1.0"
+description: "全ロール共通ガードポリシー（旧shogun-guard.shの汎用ガード機能を継承）"
+default_action: allow
+
+rules:
+  # === 破壊的操作の絶対禁止（CLAUDE.md Tier 1準拠） ===
+  - id: GLOBAL_DENY_RM_RF_ROOT
+    action: deny
+    pattern: "rm\\s+-rf\\s+/"
+    type: command
+    description: "ルートディレクトリ削除禁止（D001）"
+    priority: 1
+
+  - id: GLOBAL_DENY_RM_RF_HOME
+    action: deny
+    pattern: "rm\\s+-rf\\s+(~|/home/)"
+    type: command
+    description: "ホームディレクトリ削除禁止（D001）"
+    priority: 1
+
+  - id: GLOBAL_DENY_RM_RF_MNT
+    action: deny
+    pattern: "rm\\s+-rf\\s+/mnt/"
+    type: command
+    description: "Windowsマウント削除禁止（D001/WSL2）"
+    priority: 1
+
+  - id: GLOBAL_DENY_GIT_PUSH_FORCE
+    action: deny
+    pattern: "git\\s+push\\s+.*(-f|--force)(?!-with-lease)"
+    type: command
+    description: "git push --force禁止（D003）"
+    priority: 1
+
+  - id: GLOBAL_DENY_GIT_RESET_HARD
+    action: deny
+    pattern: "git\\s+reset\\s+--hard"
+    type: command
+    description: "git reset --hard禁止（D004）"
+    priority: 1
+
+  - id: GLOBAL_DENY_GIT_CLEAN_F
+    action: deny
+    pattern: "git\\s+clean\\s+-f"
+    type: command
+    description: "git clean -f禁止（D004）"
+    priority: 1
+
+  - id: GLOBAL_DENY_SUDO
+    action: deny
+    pattern: "^sudo\\s"
+    type: command
+    description: "sudo禁止（D005）"
+    priority: 1
+
+  - id: GLOBAL_DENY_TMUX_KILL
+    action: deny
+    pattern: "tmux\\s+kill-(server|session)"
+    type: command
+    description: "tmuxセッション/サーバー停止禁止（D006）"
+    priority: 1
+
+  - id: GLOBAL_DENY_PIPE_TO_SHELL
+    action: deny
+    pattern: "curl.*\\|\\s*(bash|sh)|wget.*\\|\\s*(bash|sh)"
+    type: command
+    description: "pipe-to-shell禁止（D008）"
+    priority: 1
+
+  # === WSL2固有の保護 ===
+  - id: GLOBAL_DENY_WINDOWS_SYSTEM
+    action: deny
+    pattern: "/mnt/c/(Windows|Program Files)"
+    type: write_path
+    description: "Windowsシステムディレクトリ書き込み禁止"
+    priority: 1
