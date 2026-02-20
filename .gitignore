@@ -56,17 +56,9 @@ id_rsa*
 !agents/
 !agents/**
 
-# config/ (sample configurations, no secrets)
+# config/ (whitelist individual files only - NEVER use !config/**)
 !config/
-!config/**
-# Secrets/external project files - never track
-config/projects.yaml
-config/settings.yaml
-config/dashboard_template_*.md
-config/pane_role_map.yaml
-config/pane_role_map.yaml.lock
-config/pane_role_map.yaml.sha256
-config/session.epoch
+!config/ntfy_auth.env.sample
 
 # context/ - contains external project confidential info - deny entirely
 context/
