@@ -59,10 +59,16 @@ id_rsa*
 # config/ (sample configurations, no secrets)
 !config/
 !config/**
+# Secrets/external project files - never track
+config/projects.yaml
+config/settings.yaml
+config/dashboard_template_*.md
+config/pane_role_map.yaml
+config/pane_role_map.yaml.lock
+config/pane_role_map.yaml.sha256
+config/session.epoch
 
-# context/ (project context documentation)
-!context/
-!context/**
+# context/ - contains external project confidential info - deny entirely
 
 # docs/ (philosophy and design docs)
 !docs/
