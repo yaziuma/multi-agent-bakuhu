@@ -1,0 +1,60 @@
+# ashigaru_policy.yaml - 足軽ポリシー
+# Identity分離設計書v3 セクション7 準拠
+# 足軽は将軍直接連絡禁止のみ、デフォルト許可。
+
+role: ashigaru
+version: "1.0"
+description: "足軽（Ashigaru）コマンド・書き込みガードポリシー"
+default_action: allow
+
+rules:
+  # === コマンドガード ===
+  - id: ASHIGARU_DENY_SHOGUN_INBOX
+    action: deny
+    pattern: "inbox_write\\.sh\\s+shogun"
+    type: command
+    description: "将軍への直接連絡禁止（家老経由で報告）"
+    priority: 50
+
+  # === 書き込みガード ===
+  - id: ASHIGARU_WRITE_ALLOW_QUEUE
+    action: allow
+    pattern: "queue/"
+    type: write_path
+    description: "queue配下書き込み許可"
+    priority: 10
+
+  - id: ASHIGARU_WRITE_ALLOW_ASHIGARU_MEMORY
+    action: allow
+    pattern: "ashigaru\\.md$"
+    type: write_path
+    description: "足軽メモリファイル書き込み許可"
+    priority: 10
+
+  - id: ASHIGARU_WRITE_DENY_SYSTEM_CONFIG
+    action: deny
+    pattern: "\\.claude/(settings|hooks|agents)"
+    type: write_path
+    description: "システム設定書き込み禁止"
+    priority: 50
+
+  - id: ASHIGARU_WRITE_DENY_INSTRUCTIONS
+    action: deny
+    pattern: "instructions/"
+    type: write_path
+    description: "指示書書き込み禁止"
+    priority: 50
+
+  - id: ASHIGARU_WRITE_DENY_SHOGUN_INBOX
+    action: deny
+    pattern: "queue/inbox/shogun\\.yaml$"
+    type: write_path
+    description: "将軍inbox直接書き込み禁止（v2 #7反映）"
+    priority: 50
+
+  - id: ASHIGARU_WRITE_DENY_OTHER_MEMORY
+    action: deny
+    pattern: "(shogun|karo|denrei)\\.md$"
+    type: write_path
+    description: "他役職メモリ書き込み禁止"
+    priority: 50

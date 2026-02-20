@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Hook Policy Schema",
+  "description": "Identity分離設計書v3 セクション10 準拠 - ポリシーYAMLの構造定義",
+  "type": "object",
+  "required": ["role", "version", "rules"],
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": ["karo", "ashigaru", "denrei", "shogun", "global"]
+    },
+    "version": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "default_action": {
+      "type": "string",
+      "enum": ["allow", "deny"]
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "action", "pattern"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique rule identifier"
+          },
+          "action": {
+            "type": "string",
+            "enum": ["allow", "deny"]
+          },
+          "pattern": {
+            "type": "string",
+            "description": "Pattern to match against command or file path"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["command", "write_path"],
+            "description": "What the pattern matches against"
+          },
+          "description": {
+            "type": "string"
+          },
+          "priority": {
+            "type": "integer",
+            "description": "Lower number = higher priority. Allow rules checked first."
+          }
+        }
+      }
+    }
+  }
+}

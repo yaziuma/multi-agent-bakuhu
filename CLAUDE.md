@@ -52,7 +52,12 @@ language:
 
 **This is ONE procedure for ALL situations**: fresh start, compaction, session continuation, or any state where you see CLAUDE.md. You cannot distinguish these cases, and you don't need to. **Always follow the same steps.**
 
-1. Identify self: `tmux display-message -t "$TMUX_PANE" -p '#{@agent_id}'`
+  1. **Read @agent_id (identity = tmux pane variable ONLY)**:
+     - **全エージェント共通**: `tmux display-message -t "$TMUX_PANE" -p '#{@agent_id}'` で読み取る。
+     - この値が自分のidentity。MEMORY.md・Memory MCP graph・会話履歴よりも**@agent_idが最優先**。
+     - 空または不正値の場合のみ: `queue/tasks/ashigaru{N}.yaml` のファイル名からN判定後に `tmux set-option -p -t "$TMUX_PANE" @agent_id ashigaru{N}` で修復。
+     - **identityのWRITEは原則禁止**。shutsujin_departure.sh が起動時に正しく設定済み。
+     - **理由**: MEMORY.md・Memory graphは全セッション共有のため、identity情報を書くと全エージェントが同一ロールを自称する致命的バグを引き起こす（2026-02-20検出）。
 2. `mcp__memory__read_graph` — restore rules, preferences, lessons
 3. **Read your instructions file**: shogun→`instructions/shogun.md`, karo→`instructions/karo.md`, ashigaru→`instructions/ashigaru.md`. **NEVER SKIP** — even if a conversation summary exists. Summaries do NOT preserve persona, speech style, or forbidden actions.
 4. Rebuild state from primary YAML data (queue/, tasks/, reports/)
@@ -65,7 +70,12 @@ language:
 Lightweight recovery using only CLAUDE.md (auto-loaded). Do NOT read instructions/ashigaru.md (cost saving).
 
 ```
-Step 1: tmux display-message -t "$TMUX_PANE" -p '#{@agent_id}' → ashigaru{N}
+Step 1: **Read @agent_id (identity = tmux pane variable ONLY)**:
+          - **全エージェント共通**: `tmux display-message -t "$TMUX_PANE" -p '#{@agent_id}'` で読み取る。
+          - この値が自分のidentity。MEMORY.md・Memory MCP graph・会話履歴よりも**@agent_idが最優先**。
+          - 空または不正値の場合のみ: `queue/tasks/ashigaru{N}.yaml` のファイル名からN判定後に `tmux set-option -p -t "$TMUX_PANE" @agent_id ashigaru{N}` で修復。
+          - **identityのWRITEは原則禁止**。shutsujin_departure.sh が起動時に正しく設定済み。
+          - **理由**: MEMORY.md・Memory graphは全セッション共有のため、identity情報を書くと全エージェントが同一ロールを自称する致命的バグを引き起こす（2026-02-20検出）。
 Step 2: mcp__memory__read_graph (skip on failure — task exec still possible)
 Step 3: Read queue/tasks/ashigaru{N}.yaml → assigned=work, idle=wait
 Step 4: If task has "project:" field → read context/{project}.md

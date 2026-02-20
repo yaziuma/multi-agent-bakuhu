@@ -1,0 +1,109 @@
+# karo_policy.yaml - 家老ポリシー
+# Identity分離設計書v3 セクション7 準拠
+# 家老は実装コマンド禁止、許可リスト優先、デフォルト許可。
+
+role: karo
+version: "1.0"
+description: "家老（Karo）コマンド・書き込みガードポリシー"
+default_action: allow
+
+rules:
+  # === コマンドガード: 禁止リスト ===
+  - id: KARO_DENY_PYTHON
+    action: deny
+    pattern: "python |python3 "
+    type: command
+    description: "Python直接実行禁止"
+    priority: 50
+
+  - id: KARO_DENY_PYTEST
+    action: deny
+    pattern: "pytest"
+    type: command
+    description: "テスト直接実行禁止"
+    priority: 50
+
+  - id: KARO_DENY_NPM
+    action: deny
+    pattern: "npm "
+    type: command
+    description: "npm直接実行禁止"
+    priority: 50
+
+  - id: KARO_DENY_NODE
+    action: deny
+    pattern: "node "
+    type: command
+    description: "node直接実行禁止"
+    priority: 50
+
+  - id: KARO_DENY_RUFF
+    action: deny
+    pattern: "ruff "
+    type: command
+    description: "Lint直接実行禁止"
+    priority: 50
+
+  - id: KARO_DENY_UVICORN
+    action: deny
+    pattern: "uvicorn"
+    type: command
+    description: "サーバー操作禁止"
+    priority: 50
+
+  - id: KARO_DENY_DOCKER
+    action: deny
+    pattern: "docker "
+    type: command
+    description: "Docker操作禁止"
+    priority: 50
+
+  # === 書き込みガード ===
+  - id: KARO_WRITE_ALLOW_QUEUE
+    action: allow
+    pattern: "queue/"
+    type: write_path
+    description: "queue配下書き込み許可"
+    priority: 10
+
+  - id: KARO_WRITE_ALLOW_DASHBOARD
+    action: allow
+    pattern: "dashboard\\.md$"
+    type: write_path
+    description: "ダッシュボード書き込み許可"
+    priority: 10
+
+  - id: KARO_WRITE_ALLOW_CONFIG
+    action: allow
+    pattern: "config/"
+    type: write_path
+    description: "config配下書き込み許可"
+    priority: 10
+
+  - id: KARO_WRITE_ALLOW_KARO_MEMORY
+    action: allow
+    pattern: "karo\\.md$"
+    type: write_path
+    description: "家老メモリファイル書き込み許可"
+    priority: 10
+
+  - id: KARO_WRITE_DENY_SOURCE_CODE
+    action: deny
+    pattern: "\\.(py|js|ts|jsx|tsx|html|css|scss)$"
+    type: write_path
+    description: "ソースコード書き込み禁止"
+    priority: 50
+
+  - id: KARO_WRITE_DENY_SYSTEM_CONFIG
+    action: deny
+    pattern: "\\.claude/(settings|hooks|agents)"
+    type: write_path
+    description: "システム設定書き込み禁止"
+    priority: 50
+
+  - id: KARO_WRITE_DENY_OTHER_MEMORY
+    action: deny
+    pattern: "(shogun|ashigaru|denrei)\\.md$"
+    type: write_path
+    description: "他役職メモリ書き込み禁止"
+    priority: 50

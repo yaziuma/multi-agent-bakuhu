@@ -680,6 +680,85 @@ log_success "  └─ 家老・足軽・伝令の陣、構築完了"
 echo ""
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# STEP 5.2: Identity分離基盤の構築
+# ───────────────────────────────────────────────────────────────────────────────
+# - pane_role_map.yaml 生成（pane ID → role マッピング）
+# - session.epoch 書き出し
+# - hook_common.sh 保護（chmod 444 + sha256）
+# - Identity分離設計書v3 セクション4 準拠
+# ═══════════════════════════════════════════════════════════════════════════════
+log_info "🔒 Identity分離基盤を構築中..."
+
+EPOCH=$(date +%s)
+MAP_FILE="$SCRIPT_DIR/config/pane_role_map.yaml"
+MAP_TMP="$MAP_FILE.tmp"
+MAP_HASH="$MAP_FILE.sha256"
+MAP_LOCK="$MAP_FILE.lock"
+EPOCH_FILE="$SCRIPT_DIR/config/session.epoch"
+HOOK_COMMON="$SCRIPT_DIR/scripts/lib/hook_common.sh"
+HOOK_COMMON_HASH="$HOOK_COMMON.sha256"
+
+# Atomic書き込み with 排他ロック
+exec 200>"$MAP_LOCK"
+flock -x 200
+
+# pane_role_map.yaml.tmp に書き込み
+cat > "$MAP_TMP" << MAPEOF
+# pane_role_map.yaml - 自動生成ファイル（shutsujin_departure.sh STEP 5.2）
+# 手動編集禁止。セッション起動ごとに再生成される。
+# Identity分離設計書v3 セクション2 準拠
+epoch: $EPOCH
+generated: $(date '+%Y-%m-%d %H:%M:%S')
+panes:
+MAPEOF
+
+# 将軍pane
+SHOGUN_PANE_ID=$(tmux display-message -t "shogun:main" -p '#{pane_id}' 2>/dev/null || echo "")
+if [[ -n "$SHOGUN_PANE_ID" ]]; then
+    echo "  $SHOGUN_PANE_ID: shogun" >> "$MAP_TMP"
+fi
+
+# multiagentセッションの全pane
+for i in $(seq 0 $TOTAL_AGENTS); do
+    p=$((PANE_BASE + i))
+    _pane_id=$(tmux display-message -t "multiagent:agents.${p}" -p '#{pane_id}' 2>/dev/null || echo "")
+    _agent_id="${AGENT_IDS[$i]}"
+    # ベースロールを抽出（ashigaru1 → ashigaru, denrei2 → denrei, karo → karo）
+    _base_role=$(echo "$_agent_id" | sed 's/[0-9]*$//')
+    if [[ -n "$_pane_id" ]]; then
+        echo "  $_pane_id: $_base_role" >> "$MAP_TMP"
+    fi
+done
+
+# Atomic rename
+mv "$MAP_TMP" "$MAP_FILE"
+
+# sha256sum を記録
+sha256sum "$MAP_FILE" > "$MAP_HASH"
+
+# chmod 644（owner-writable only）
+chmod 644 "$MAP_FILE"
+
+# session.epoch に同じエポック番号を書き出し
+echo "$EPOCH" > "$EPOCH_FILE"
+
+# hook_common.sh 保護
+if [[ -f "$HOOK_COMMON" ]]; then
+    # chmod 444（全ユーザー読み取り専用）
+    chmod 444 "$HOOK_COMMON"
+    # sha256ハッシュ生成
+    sha256sum "$HOOK_COMMON" > "$HOOK_COMMON_HASH"
+fi
+
+# ロック解放
+exec 200>&-
+
+log_success "  └─ pane_role_map.yaml 生成完了 (epoch=$EPOCH)"
+log_success "  └─ session.epoch 書き出し完了"
+log_success "  └─ hook_common.sh 保護完了 (chmod 444 + sha256)"
+echo ""
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # STEP 6: Claude Code 起動（-s / --setup-only のときはスキップ）
 # ═══════════════════════════════════════════════════════════════════════════════
 if [ "$SETUP_ONLY" = false ]; then

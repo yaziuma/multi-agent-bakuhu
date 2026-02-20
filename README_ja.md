@@ -167,6 +167,83 @@ Step 3: 足軽3号が自分のinboxを読む
 - 関心の分離が明確
 - セッション間の知識永続化
 
+### 🔒 Identity分離v3（ロールベースアクセス制御）
+
+各エージェントが「なりすまし」や「越権操作」をできないようにする、多層防御セキュリティ機構です。
+
+**2層防御アーキテクチャ:**
+
+| 層 | Hook | 防御対象 |
+|----|------|---------|
+| Bash実行制限 | `{role}-guard.sh` | 許可されていないシェルコマンドの実行 |
+| ファイル書き込み制限 | `{role}-write-guard.sh` | 他ロールのファイルへの書き込み |
+
+**役職別guardフック:**
+
+```
+将軍（Shogun）: shogun-guard.sh + shogun-write-guard.sh
+  → queue/配下のYAMLのみ編集可、自分のメモリ（shogun.md）のみ書き込み可
+
+家老（Karo）: karo-guard.sh + karo-write-guard.sh
+  → タスク管理・ダッシュボード・queue操作が許可
+
+足軽（Ashigaru）: ashigaru-guard.sh + ashigaru-write-guard.sh
+  → プロジェクトコードの実装・テストが許可、他ロールのメモリ書き込みは禁止
+
+全ロール共通: global-guard.sh
+  → rm -rf、kill、tmux kill等の破壊的操作を全ロールでブロック
+```
+
+**pane_role_mapによるIdentity解決:**
+
+セッション起動時（`shutsujin_departure.sh`）に自動生成される `config/pane_role_map.yaml` が、tmux pane ID（`%0`, `%1`...）とロール名の対応表として機能します。
+
+```yaml
+# config/pane_role_map.yaml（自動生成）
+panes:
+  "%0": shogun
+  "%1": karo
+  "%2": ashigaru
+  "%3": ashigaru
+  "%5": denrei
+```
+
+SHA-256ハッシュ（`config/pane_role_map.yaml.sha256`）による改ざん検出と、`config/session.epoch` によるセッション整合性保証を組み合わせ、Trust Anchorとして機能します。
+
+**Policy-as-Data（ポリシーYAML管理）:**
+
+各ロールのアクセスポリシーはコードではなくYAMLデータとして定義されています。
+
+```
+.claude/hooks/policies/
+├── shogun_policy.yaml     # 将軍が実行できるコマンド・書き込めるファイル
+├── karo_policy.yaml       # 家老のポリシー
+├── ashigaru_policy.yaml   # 足軽のポリシー
+├── denrei_policy.yaml     # 伝令のポリシー
+├── global_policy.yaml     # 全ロール共通の禁止操作
+└── policy_schema.json     # JSON Schemaによるバリデーション
+```
+
+YAMLを修正するだけでポリシーを変更でき、コードレビューと監査が容易です。
+
+**メモリ分離:**
+
+各ロールは自分のメモリファイルのみ読み書き可能。他ロールのメモリへの書き込みはwrite-guardフックがブロックします。
+
+```
+memory/
+├── shogun.md    # 将軍のみ書き込み可
+├── karo.md      # 家老のみ書き込み可
+├── ashigaru.md  # 足軽のみ書き込み可
+└── denrei.md    # 伝令のみ書き込み可
+```
+
+`MEMORY.md` はルックアップテーブル（ロール→メモリファイルパスの対応表）のみを含み、identity情報は一切書き込みません。
+
+**起動時セルフテスト（selftest_hooks.sh）:**
+
+セッション起動時に全hookの整合性を自動検証。ファイル存在・実行権限・`hook_common.sh` のSHA-256整合性など7カテゴリを検査し、1つでも失敗すると起動をブロックします（ゼロトレランス）。
+
 ---
 
 ## 外部エージェント（Bakuhu独自機能）
@@ -1112,11 +1189,37 @@ multi-agent-bakuhu/
 │
 ├── scripts/                  # ユーティリティスクリプト
 │   ├── inbox_write.sh        # エージェントinboxへのメッセージ書き込み
-│   └── extract-section.sh    # マークダウンセクション抽出（bash+awk）
+│   ├── extract-section.sh    # マークダウンセクション抽出（bash+awk）
+│   ├── selftest_hooks.sh     # hookシステム整合性セルフテスト
+│   ├── get_pane_id.sh        # 現在のtmux pane ID取得
+│   ├── get_agent_role.sh     # pane_role_mapからロール取得
+│   └── lib/
+│       └── hook_common.sh    # hook共有ライブラリ（chmod 444、整合性保護）
+│
+├── .claude/hooks/            # Claude Code PreToolUse hookスクリプト
+│   ├── shogun-guard.sh       # 将軍Bash実行ガード
+│   ├── shogun-write-guard.sh # 将軍ファイル書き込みガード
+│   ├── karo-guard.sh         # 家老Bash実行ガード
+│   ├── karo-write-guard.sh   # 家老ファイル書き込みガード
+│   ├── ashigaru-guard.sh     # 足軽Bash実行ガード
+│   ├── ashigaru-write-guard.sh # 足軽ファイル書き込みガード
+│   ├── denrei-guard.sh       # 伝令Bash実行ガード
+│   ├── denrei-write-guard.sh # 伝令ファイル書き込みガード
+│   ├── global-guard.sh       # 全ロール共通破壊的操作ガード
+│   └── policies/             # ロール別ポリシーYAML
+│       ├── shogun_policy.yaml
+│       ├── karo_policy.yaml
+│       ├── ashigaru_policy.yaml
+│       ├── denrei_policy.yaml
+│       ├── global_policy.yaml
+│       └── policy_schema.json
 │
 ├── config/
 │   ├── settings.yaml         # 言語、エージェント数、その他の設定
-│   └── projects.yaml         # プロジェクト一覧
+│   ├── projects.yaml         # プロジェクト一覧
+│   ├── pane_role_map.yaml    # pane ID → ロール対応表（起動時自動生成）
+│   ├── pane_role_map.yaml.sha256 # 整合性ハッシュ（改ざん検出）
+│   └── session.epoch         # セッション整合性トークン
 │
 ├── projects/                 # プロジェクト詳細（git対象外、機密情報含む）
 │   └── <project_id>.yaml    # 各プロジェクトの全情報

@@ -1,0 +1,159 @@
+# shogun_policy.yaml - 将軍ポリシー
+# Identity分離設計書v3 準拠
+# 将軍はインフラ操作を直接実行できない。許可リスト→禁止リスト→デフォルト拒否。
+
+role: shogun
+version: "1.0"
+description: "将軍（Shogun）コマンド・書き込みガードポリシー"
+default_action: deny
+
+rules:
+  # === コマンドガード: 許可リスト（最優先） ===
+  - id: SHOGUN_ALLOW_INBOX
+    action: allow
+    pattern: "inbox_write.sh"
+    type: command
+    description: "メールボックス書き込み許可"
+    priority: 10
+
+  - id: SHOGUN_ALLOW_WHOAMI
+    action: allow
+    pattern: "shogun_whoami.sh"
+    type: command
+    description: "自己確認スクリプト許可"
+    priority: 10
+
+  - id: SHOGUN_ALLOW_KARO_STATUS
+    action: allow
+    pattern: "shogun_karo_status.sh"
+    type: command
+    description: "家老ステータス確認許可"
+    priority: 10
+
+  - id: SHOGUN_ALLOW_COMPACT
+    action: allow
+    pattern: "run_compact.sh"
+    type: command
+    description: "コンパクト実行許可"
+    priority: 10
+
+  - id: SHOGUN_ALLOW_CLEAR
+    action: allow
+    pattern: "run_clear.sh"
+    type: command
+    description: "クリア実行許可"
+    priority: 10
+
+  - id: SHOGUN_ALLOW_TMUX_CAPTURE
+    action: allow
+    pattern: "tmux capture-pane"
+    type: command
+    description: "tmuxペイン内容取得許可"
+    priority: 10
+
+  - id: SHOGUN_ALLOW_TMUX_DISPLAY
+    action: allow
+    pattern: "tmux display-message"
+    type: command
+    description: "tmuxメッセージ表示許可"
+    priority: 10
+
+  - id: SHOGUN_ALLOW_CONTEXT_CHECK
+    action: allow
+    pattern: "check_context.sh"
+    type: command
+    description: "コンテキスト確認許可"
+    priority: 10
+
+  - id: SHOGUN_ALLOW_CURL_LOCAL
+    action: allow
+    pattern: "curl.*localhost|curl.*127\\.0\\.0\\.1"
+    type: command
+    description: "ローカルcurl許可"
+    priority: 10
+
+  # === コマンドガード: 禁止リスト ===
+  - id: SHOGUN_DENY_UVICORN
+    action: deny
+    pattern: "uvicorn"
+    type: command
+    description: "サーバー操作禁止"
+    priority: 50
+
+  - id: SHOGUN_DENY_INBOX_WATCHER
+    action: deny
+    pattern: "inbox_watcher"
+    type: command
+    description: "インフラ操作禁止"
+    priority: 50
+
+  - id: SHOGUN_DENY_PYTHON
+    action: deny
+    pattern: "python |python3 "
+    type: command
+    description: "Python直接実行禁止"
+    priority: 50
+
+  - id: SHOGUN_DENY_PYTEST
+    action: deny
+    pattern: "pytest"
+    type: command
+    description: "テスト直接実行禁止"
+    priority: 50
+
+  - id: SHOGUN_DENY_RUFF
+    action: deny
+    pattern: "ruff "
+    type: command
+    description: "Lint直接実行禁止"
+    priority: 50
+
+  - id: SHOGUN_DENY_NPM
+    action: deny
+    pattern: "npm "
+    type: command
+    description: "npm直接実行禁止"
+    priority: 50
+
+  - id: SHOGUN_DENY_NODE
+    action: deny
+    pattern: "node "
+    type: command
+    description: "node直接実行禁止"
+    priority: 50
+
+  - id: SHOGUN_DENY_KILL
+    action: deny
+    pattern: "kill |killall |pkill "
+    type: command
+    description: "プロセス停止禁止"
+    priority: 50
+
+  - id: SHOGUN_DENY_RESTART
+    action: deny
+    pattern: "restart.sh|start.sh"
+    type: command
+    description: "再起動禁止"
+    priority: 50
+
+  - id: SHOGUN_DENY_CURL_EXTERNAL
+    action: deny
+    pattern: "curl "
+    type: command
+    description: "外部curl禁止（ローカル許可後のフォールバック）"
+    priority: 90
+
+  # === 書き込みガード ===
+  - id: SHOGUN_WRITE_ALLOW_QUEUE_YAML
+    action: allow
+    pattern: "queue/.*\\.yaml$"
+    type: write_path
+    description: "queue配下のYAMLファイルのみ書き込み許可"
+    priority: 10
+
+  - id: SHOGUN_WRITE_DENY_ALL
+    action: deny
+    pattern: ".*"
+    type: write_path
+    description: "その他全ファイルへの書き込み禁止"
+    priority: 100
