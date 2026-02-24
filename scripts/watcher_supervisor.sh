@@ -47,13 +47,30 @@ start_watcher_if_missing() {
     nohup bash scripts/inbox_watcher.sh "$agent" >> "$log_file" 2>&1 &
 }
 
+# Read config once before the loop (no hot-reload needed)
+ASHIGARU_COUNT=$(grep 'ashigaru_count:' config/settings.yaml 2>/dev/null | awk '{print $2}' || true)
+DENREI_COUNT=$(grep 'max_count:' config/settings.yaml 2>/dev/null | awk '{print $2}' || true)
+
+# Fallback if config read fails
+ASHIGARU_COUNT=${ASHIGARU_COUNT:-2}
+DENREI_COUNT=${DENREI_COUNT:-1}
+
+# Numeric validation (guard against non-integer values in config)
+if ! [[ "$ASHIGARU_COUNT" =~ ^[0-9]+$ ]]; then
+    ASHIGARU_COUNT=2
+fi
+if ! [[ "$DENREI_COUNT" =~ ^[0-9]+$ ]]; then
+    DENREI_COUNT=1
+fi
+
 while true; do
     start_watcher_if_missing "shogun" "logs/inbox_watcher_shogun.log"
     start_watcher_if_missing "karo" "logs/inbox_watcher_karo.log"
-    start_watcher_if_missing "ashigaru1" "logs/inbox_watcher_ashigaru1.log"
-    start_watcher_if_missing "ashigaru2" "logs/inbox_watcher_ashigaru2.log"
-    start_watcher_if_missing "ashigaru3" "logs/inbox_watcher_ashigaru3.log"
-    start_watcher_if_missing "denrei1" "logs/inbox_watcher_denrei1.log"
-    start_watcher_if_missing "denrei2" "logs/inbox_watcher_denrei2.log"
+    for i in $(seq 1 "$ASHIGARU_COUNT"); do
+        start_watcher_if_missing "ashigaru${i}" "logs/inbox_watcher_ashigaru${i}.log"
+    done
+    for i in $(seq 1 "$DENREI_COUNT"); do
+        start_watcher_if_missing "denrei${i}" "logs/inbox_watcher_denrei${i}.log"
+    done
     sleep 5
 done
