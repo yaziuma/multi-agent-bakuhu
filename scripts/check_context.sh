@@ -49,7 +49,7 @@ fi
 sleep 3
 
 # Capture pane output (full scrollback buffer, last 80 lines)
-OUTPUT=$(timeout 5 tmux capture-pane -t "$PANE_ID" -p -S -80 2>/dev/null)
+OUTPUT=$(timeout 5 tmux capture-pane -t "$PANE_ID" -p -J -S -150 2>/dev/null)
 
 if [ -z "$OUTPUT" ]; then
     echo "ERROR: No output captured from agent '$AGENT_ID'" >&2
@@ -58,14 +58,15 @@ fi
 
 # Extract percentage from output
 # /context output format: "114k/200k tokens (57%)" or similar
-# First try to find the tokens line with percentage
-PERCENT=$(echo "$OUTPUT" | grep -oE '[0-9]+k/[0-9]+k tokens \([0-9]+%\)' | head -1)
+# Collapse newlines first to handle terminal line-wrapping in narrow panes
+OUTPUT_ONELINE=$(echo "$OUTPUT" | sed 's/\x1b\[[0-9;]*m//g' | tr -d '\n')
+PERCENT=$(echo "$OUTPUT_ONELINE" | grep -oE '[0-9]+k/[0-9]+k tokens *\([0-9]+%\)' | head -1 || true)
 if [ -n "$PERCENT" ]; then
     # Full format found, extract just the percentage
     PERCENT=$(echo "$PERCENT" | grep -oE '[0-9]+%')
 else
     # Fallback: any standalone percentage
-    PERCENT=$(echo "$OUTPUT" | grep -oE '[0-9]+%' | head -1)
+    PERCENT=$(echo "$OUTPUT_ONELINE" | grep -oE '\([0-9]+%\)' | head -1 | grep -oE '[0-9]+%' || true)
 fi
 
 if [ -z "$PERCENT" ]; then
