@@ -2,6 +2,7 @@
 # shogun-write-guard.sh - 将軍（Shogun）書き込みガード
 # Identity分離設計書v3 セクション7 準拠（忍び#7反映）
 # shogunロール固有の書き込みガードとして再定義。
+# cmd_424: symlink解決バグ修正 + パストラバーサル防御強化
 
 set -euo pipefail
 
@@ -22,15 +23,40 @@ if [[ -z "$FILE_PATH" ]]; then
     exit 0
 fi
 
-# パス正規化
+# パス正規化（symlink解決版）
 NORM_PATH=$(normalize_path "$FILE_PATH")
 
-# queue/配下のyamlファイルのみ許可
-if [[ "$NORM_PATH" == *"/queue/"* && "$NORM_PATH" == *".yaml" ]]; then
+# 論理パス正規化（symlink非解決、../のみ解決）
+# queue/inbox がsymlinkの場合でも論理パスで queue/ 配下と判定するため
+LOGICAL_DIR=$(cd "$(dirname "$FILE_PATH")" 2>/dev/null && pwd) || LOGICAL_DIR=""
+if [[ -n "$LOGICAL_DIR" ]]; then
+    LOGICAL_NORM="$LOGICAL_DIR/$(basename "$FILE_PATH")"
+else
+    LOGICAL_NORM="$FILE_PATH"
+fi
+
+# パストラバーサル防御: ../を含むパスは即拒否（正規化失敗時のフォールバック対策）
+if [[ "$NORM_PATH" == *".."* || "$LOGICAL_NORM" == *".."* ]]; then
+    hook_log "$HOOK_NAME" "SHOGUN_WRITE_DENY_TRAVERSAL" "path=$FILE_PATH" "deny"
+    echo "パストラバーサルが検出されました。" >&2
+    echo "対象: $FILE_PATH" >&2
+    exit 2
+fi
+
+# queue/配下のyamlファイル判定
+# HOOK_PROJECT_DIR前方一致で厳密にプロジェクトスコープ内のqueue/のみ許可
+QUEUE_PREFIX="$HOOK_PROJECT_DIR/queue/"
+if [[ "$NORM_PATH" == "$QUEUE_PREFIX"* && "$NORM_PATH" == *".yaml" ]]; then
     hook_log "$HOOK_NAME" "SHOGUN_WRITE_ALLOW_QUEUE" "path=$NORM_PATH" "allow"
     exit 0
 fi
 
+# symlink解決前の論理パスでも判定（queue/inbox symlink対応）
+# ../解決済みかつプロジェクト前方一致で、パストラバーサル攻撃を防止
+if [[ "$LOGICAL_NORM" == "$QUEUE_PREFIX"* && "$LOGICAL_NORM" == *".yaml" ]]; then
+    hook_log "$HOOK_NAME" "SHOGUN_WRITE_ALLOW_QUEUE_LOGICAL" "path=$LOGICAL_NORM" "allow"
+    exit 0
+fi
 
 # 将軍メモリファイルは許可
 if [[ "$(basename "$NORM_PATH")" == "shogun.md" ]]; then

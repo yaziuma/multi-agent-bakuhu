@@ -60,6 +60,26 @@
             "command": "bash .claude/hooks/gitignore-guardian-bash.sh"
           }
         ]
+      },
+      {
+        "matcher": "Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/shogun-task-guard.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash scripts/stop_hook_inbox.sh"
+          }
+        ]
       }
     ]
   },

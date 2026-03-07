@@ -23,8 +23,8 @@ Never write just "57%" without token numbers.
 | Usage | Status | Required Action |
 |-------|--------|-----------------|
 | 0-60% | Healthy | Continue normal work |
-| 60-75% | Warning | /compact after current task |
-| 75-85% | Danger | /compact immediately |
+| 60-75% | Warning | run_compact.sh 経由でcompact（上位者が実行） |
+| 75-85% | Danger | run_compact.sh 経由で即時compact（上位者が実行） |
 | 85%+ | Critical | /clear immediately |
 
 ## Dashboard Header
@@ -78,18 +78,20 @@ Status indicators:
 |-------|--------|-----------------|------|
 | 0-50% | 🟢 Healthy | 通常作業 | — |
 | 50-60% | 🟢 Healthy | 通常、ただし意識 | — |
-| 60-70% | 🟡 Warning | 現タスク完了後に/compact | タスク1件分 |
-| 70-80% | 🔴 Danger | /compact即時実行（タスク中断してでも） | 猶予なし |
-| 80%+ | ⚫ Critical | まず/compact実行。効果なしなら/clear | 猶予なし |
+| 60-70% | 🟡 Warning | 現タスク完了後にrun_compact.sh経由でcompact（上位者が実行） | タスク1件分 |
+| 70-80% | 🔴 Danger | run_compact.sh経由で即時compact（上位者が実行。タスク中断してでも） | 猶予なし |
+| 80%+ | ⚫ Critical | まずrun_compact.sh経由でcompact。効果なしなら/clear | 猶予なし |
 
 ## /compact Execution Rules
 
-- 60%到達で現タスク後すぐ/compact
-- /compact後に再確認、改善なければ/clear
+- /compactは必ず scripts/run_compact.sh 経由で上位者が実行する
+- エージェント自身が /compact を直接入力することは禁止
+- Usage: `bash scripts/run_compact.sh <agent_id>`
+- 詳細テンプレートは skills/context-health.md を参照
+- 60%到達で現タスク後すぐrun_compact.sh経由でcompact
+- compact後に上位者が再測定、改善なければ/clearを指示
 - compact_count 3回到達で次回は/clear（compact効果低下のため）
-- /compact後ダッシュボードのコンテキスト欄を即更新（実測値で）
-- **80%+でもまず/compact**: 80%超えでもいきなり/clearせず、まず/compactを実行
-- /compact後に上位者が再測定し、改善なければ/clearを指示
+- compact後ダッシュボードのコンテキスト欄を即更新（実測値で）
 - /clearは最終手段であり、compactで改善の余地がある限り使わない
 
 ## Prohibited Actions（禁止事項 — 違反は殿の逆鱗）
@@ -100,7 +102,7 @@ Status indicators:
 | 「まだ大丈夫」という主観判断 | 数値で判断せよ。感覚は信用するな |
 | コンテキスト未確認で次タスク着手 | 確認は義務。省略不可 |
 | ダッシュボードのコンテキスト欄を「fresh」のまま放置 | 実測値で更新。未測定なら「未測定」と書け |
-| いきなり/clear実行 | /clearは最終手段。まず/compactを試みよ |
+| いきなり/clear実行（まずrun_compact.shを試みよ） | /clearは最終手段。まずrun_compact.sh経由でcompactを試みよ |
 
 ## Accountability（説明責任）
 
