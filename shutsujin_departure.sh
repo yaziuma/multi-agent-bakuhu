@@ -39,7 +39,7 @@ fi
 # 伝令の人数を読み取り（デフォルト: 2）
 DENREI_COUNT=2
 if [ -f "./config/settings.yaml" ]; then
-    DENREI_COUNT=$(awk '/^denrei:/{flag=1; next} /^[a-z_]+:/{flag=0} flag' ./config/settings.yaml | awk '/^  max_count:/ {print $2}' 2>/dev/null || echo "2")
+    DENREI_COUNT=$(awk '/^denrei:/{flag=1; next} /^[a-z_]+:/{flag=0} flag' ./config/settings.yaml | awk '/^  +max_count:/ {print $2}' 2>/dev/null || echo "2")
     # 数値でない場合や範囲外の場合はデフォルト値を使用
     if ! [[ "$DENREI_COUNT" =~ ^[1-2]$ ]]; then
         DENREI_COUNT=2

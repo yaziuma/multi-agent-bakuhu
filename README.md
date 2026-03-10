@@ -129,7 +129,7 @@ One source of truth, zero sync drift. Change a rule once, all CLIs get it.
 | **Ashigaru (足軽)** | Foot soldiers — execute tasks in parallel | Sonnet/Opus | Configurable (default: 3) |
 | **Denrei (伝令)** | Messengers — summon and relay with external agents | Haiku | 2 |
 | **Shinobi (忍び)** | Intelligence — research, web search, large document analysis | Gemini | External |
-| **Gunshi (軍師)** | Strategist — deep reasoning, code review, design decisions | Codex | External |
+| **Kyakusho (客将)** | Strategist — deep reasoning, code review, design decisions | Codex | External |
 
 ### Agent Team (Claude Code Sub-agents)
 
@@ -330,11 +330,11 @@ The Shogun can summon external specialists **via Denrei (messengers)** for tasks
 | Agent | Tool | Role | Strengths |
 |-------|------|------|-----------|
 | **Shinobi (忍び)** | Gemini CLI | Intelligence & Research | 1M token context, Web search, PDF/video analysis |
-| **Gunshi (軍師)** | Codex CLI | Strategic Advisor | Deep reasoning, Design decisions, Code review |
+| **Kyakusho (客将)** | Codex CLI | Strategic Advisor | Deep reasoning, Design decisions, Code review |
 
 **Requirements:**
 - **Shinobi**: Requires [Gemini CLI](https://github.com/google/generative-ai-cli) installed separately
-- **Gunshi**: Requires [Codex CLI](https://github.com/openai/codex-cli) installed separately
+- **Kyakusho**: Requires [Codex CLI](https://github.com/openai/codex-cli) installed separately
 
 **Key rules:**
 - Shogun/Karo summon external agents **only via Denrei** (forbidden action F006 if done directly)
@@ -1428,7 +1428,7 @@ multi-agent-bakuhu/
 │   ├── ashigaru.md           # Ashigaru instructions
 │   ├── denrei.md             # Denrei (messenger) instructions
 │   ├── shinobi.md            # Shinobi (Gemini) instructions
-│   ├── gunshi.md             # Gunshi (Codex) instructions
+│   ├── kyakusho.md           # Kyakusho (Codex) instructions
 │   └── cli_specific/         # CLI-specific tool descriptions
 │       ├── claude_tools.md   # Claude Code tools & features
 │       └── copilot_tools.md  # GitHub Copilot CLI tools & features
@@ -1494,7 +1494,7 @@ multi-agent-bakuhu/
 │   │   ├── tasks/denrei{1-2}.yaml
 │   │   └── reports/denrei{1-2}_report.yaml
 │   ├── shinobi/reports/      # Shinobi (Gemini) reports
-│   └── gunshi/reports/       # Gunshi (Codex) reports
+│   └── kyakusho/reports/     # Kyakusho (Codex) reports
 │
 ├── saytask/                  # Behavioral psychology-driven motivation
 │   └── streaks.yaml          # Streak tracking and daily progress

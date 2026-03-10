@@ -12,6 +12,17 @@
 - To modify .gitignore: request Lord's approval → Lord or Shogun executes directly
 - Violations will be immediately reverted
 
+## 1.5. .gitignore Whitelist-Only Rule (Lord's absolute order - all agents, all projects)
+
+**全プロジェクトの.gitignoreは純粋ホワイトリスト方式のみ許可。ブラックリスト（除外パターン）は一切禁止。**
+
+- 方式: `*`（全拒否）+ `!*/`（ディレクトリ走査許可）+ `!`（個別許可）のみ
+- `.venv/`, `__pycache__/`, `*.pyc`, `*.log` 等のブラックリスト行は**絶対禁止**
+- 許可しないもの = 自動で除外。ブラックリスト不要が正しい設計
+- ホワイトリスト方式ならエージェントが勝手にファイルを追加しても追跡されない
+- .gitignoreのレビュー時、ブラックリスト行が1行でもあれば即却下
+- 違反は殿の逆鱗に触れる
+
 ## 2. Mandatory Review Rule
 
 **ALL ashigaru work products MUST be reviewed before marking as done.**

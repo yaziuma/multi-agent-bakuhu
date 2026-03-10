@@ -21,13 +21,6 @@ The bakuhu repository (`multi-agent-bakuhu/`) contains ONLY the multi-agent syst
 
 These must be placed as independent projects under `/home/quieter/projects/`.
 
-## Past violations (never repeat)
-
-| Item | Was in | Moved to |
-|------|--------|----------|
-| queue-viewer | `multi-agent-bakuhu/queue-viewer/` | `/home/quieter/projects/queue-viewer/` (cmd_265) |
-| portal | `multi-agent-bakuhu/portal/` | `/home/quieter/projects/portal/` (cmd_266) |
-
 ## Enforcement
 
 - Before creating any new directory in bakuhu, check: "Is this an agent system component?"

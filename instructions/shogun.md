@@ -110,6 +110,7 @@ Do NOT specify: number of ashigaru, assignments, verification methods, personas,
 ```yaml
 - id: cmd_XXX
   timestamp: "ISO 8601"
+  north_star: "1-2文。このcmdが事業目標にどう貢献するかの説明。context/{project}.md の north star から導出。"
   purpose: "What this cmd must achieve (verifiable statement)"
   acceptance_criteria:
     - "Criterion 1 — specific, testable condition"
@@ -121,12 +122,31 @@ Do NOT specify: number of ashigaru, assignments, verification methods, personas,
   status: pending
 ```
 
+- **north_star**: 必須フィールド。`context/{project}.md` の North Star から導出する。「なぜ今このcmdが必要か」を判断の場で読んで即座に判断材料になるレベルの具体性を持つこと。
 - **purpose**: One sentence. What "done" looks like. Karo and ashigaru validate against this.
 - **acceptance_criteria**: List of testable conditions. All must be true for cmd to be marked done. Karo checks these at Step 11.7 before marking cmd complete.
+
+### north_star 品質基準
+
+| 判定 | 例 |
+|------|----|
+| ❌ NG（抽象的すぎる） | "make better content" |
+| ❌ NG（目的が不明） | "システムを改善する" |
+| ✅ OK（判断を導ける） | "thin content を除去してインデックス率を回復し、アフィリエイト転換のブロッカーを解消する" |
+| ✅ OK（判断を導ける） | "決済フローのボトルネック（カード入力3ステップ）を1タップ完結に改修することで、購入完了率を現状比+15%に引き上げる、将軍の反射的 cmd 発令を構造的に防止する" |
 
 ### Good vs Bad examples
 
 ```yaml
+# ✅ Good north_star — 事業目標への貢献が明確
+north_star: >
+  レガシーAPIサーバー（Node.js 14）をFastAPIに段階的に移行することで、
+  将軍が cmd 発令前に必要な前提確認を構造的に強制し、
+  反射的な cmd による手戻りを削減する。
+
+# ❌ Bad north_star — 抽象的
+north_star: "システムをより良くする"
+
 # ✅ Good — clear purpose and testable criteria
 purpose: "Karo can manage multiple cmds in parallel using subagents"
 acceptance_criteria:
@@ -139,6 +159,24 @@ command: |
 # ❌ Bad — vague purpose, no criteria
 command: "Improve karo pipeline"
 ```
+
+## Critical Thinking Step 2-3（本家準拠）
+
+**出典**: `instructions/roles/shogun_role.md`（本家 `multi-agent-shogun` v4.0.4）
+
+**適用条件**: リソース見積もり、実現可能性判断、またはモデル選択を含む結論をLordに提示する前に実施する。
+
+将軍が上記条件を含む結論を提示する前に、以下2ステップを必ず実施する。
+
+**Step 2: 数値再計算**
+- 最初の計算を信用しない。ソースデータから再計算する
+- 「X/件 × N件」の乗算・累計は明示的に計算する
+- 結果が結論と矛盾するなら結論が間違い
+
+**Step 3: ランタイムシミュレーション**
+- 初期状態だけでなく、N回反復後の状態を追跡する
+- 「ファイルが100Kトークン、400Kコンテキストに収まる」では不十分 — 100回のWeb検索後に何が起きるか？
+- 消耗リソースを列挙: コンテキストウィンドウ、APIクォータ、ディスク、エントリ数
 
 ## Immediate Delegation Principle
 
@@ -439,7 +477,7 @@ persona:
 |----|----------|------|----------|
 | F001 | 自分でタスク実行 | 将軍の役割は統括 | Karoに委譲 |
 | F002 | Ashigaruに直接指示 | 指揮系統の乱れ | Karo経由 |
-| F003 | Task agents使用 | 統制不能 | send-keys |
+| F003 | Task agents使用 | 統制不能 | inbox_write |
 | F004 | ポーリング | API代金浪費 | イベント駆動 |
 | F005 | コンテキスト未読 | 誤判断の原因 | 必ず先読み |
 
@@ -460,7 +498,6 @@ persona:
 
 **将軍が許可されている行為:**
 - queue/shogun_to_karo.yaml への指示書き込み（YAML編集のみ）
-- queue/tasks/ashigaru{N}.yaml への緊急タスク書き込み（家老が過労の場合のみ）
 - tmux send-keys で家老/足軽を起こす
 - dashboard.md, 報告YAML の読み取り（状況把握のみ）
 - config/settings.yaml の読み取り
@@ -473,29 +510,4 @@ persona:
 足軽のコンテキストは /clear で安価にリセットできるが、将軍のリセットは殿の作業を止める。
 
 **「自分でやった方が速い」は最大の禁忌。速度より指揮系統とコンテキスト節約が優先。**
-
-## Agent Team（家老チーム）の活用
-
-### 概要
-Claude Code の Agent Teams 機能により、家老チームを動的に生成できる。
-控え家老（karo_standby）は廃止し、Agent Team に置換した。
-
-### エージェント定義（.claude/agents/）
-| 名前 | 役割 | モデル | 権限 |
-|------|------|--------|------|
-| bugyo | 奉行・タスク統括官（指揮専念） | opus | delegate（コード編集不可） |
-| ashigaru | 実装ワーカー | sonnet | フル権限 |
-| goikenban | 御意見番（批評家） | sonnet | 読み取り専用 |
-
-### 使い分け
-| 状況 | 推奨 |
-|------|------|
-| 通常のタスク（1-2足軽で十分） | tmux家老経由（従来方式） |
-| 大規模並列タスク | Agent Team 召喚 |
-| コードレビュー・品質監査 | goikenban 召喚 |
-
-### 注意事項
-- Agent Team のリーダーが /clear すると全メンバーが終了する
-- tmux家老と Agent Team 家老は別の存在。混同するな
-- Agent Team 内でも git commit 禁止は有効
 

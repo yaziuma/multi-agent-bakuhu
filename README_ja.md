@@ -46,7 +46,7 @@
     │             │
     ▼             ▼
  ┌─┬─┬─┐     ┌──┬──┐        ┌────────┐  ┌────────┐
- │1│2│3│     │D1│D2│ ─────→ │ 忍び   │  │ 軍師   │
+ │1│2│3│     │D1│D2│ ─────→ │ 忍び   │  │ 客将   │
  └─┴─┴─┘     └──┴──┘        │(Gemini)│  │(Codex) │
   足 軽       伝 令          └────────┘  └────────┘
                               外部エージェント
@@ -106,7 +106,7 @@
 | ⚔️ 足軽（Ashigaru） | ワーカー — 並列でタスク実行 | 3（設定可） | Sonnet/Opus | コード実装・テスト・調査 |
 | 📨 伝令（Denrei） | 使者 — 外部エージェントとの通信 | 2 | Haiku | ブロッキングAPIコールを引き受け |
 | 🥷 忍び（Shinobi） | 諜報 — 調査・ウェブ検索・大規模文書分析 | 外部 | Gemini | 100万トークン文脈、ウェブ検索 |
-| 🧠 軍師（Gunshi） | 参謀 — 深い推論・設計判断・コードレビュー | 外部 | Codex | gpt-5.3-codex、深い推論 |
+| 🧠 客将（Kyakusho） | 参謀 — 深い推論・設計判断・コードレビュー | 外部 | Codex | gpt-5.3-codex、深い推論 |
 
 ### Agent Team（Claude Code サブエージェント）
 
@@ -253,7 +253,7 @@ memory/
 | エージェント | ツール | 役割 | 得意分野 |
 |-------------|--------|------|---------|
 | 🥷 忍び（Shinobi） | Gemini CLI | 諜報・調査 | 100万トークン文脈、ウェブ検索、PDF/動画分析 |
-| 🧠 軍師（Gunshi） | Codex CLI | 参謀・設計 | 深い推論、設計判断、コードレビュー |
+| 🧠 客将（Kyakusho） | Codex CLI | 参謀・設計 | 深い推論、設計判断、コードレビュー |
 
 **鉄則:**
 - 外部エージェントの召喚は **伝令経由のみ**（直接召喚は禁止行為 F006）
@@ -557,7 +557,7 @@ wsl --install
 | ⚔️ 足軽（Ashigaru） | ワーカー — 並列でタスク実行 | 3（設定可） | Sonnet/Opus |
 | 📨 伝令（Denrei） | 使者 — 外部エージェントとの通信 | 2 | Haiku |
 | 🥷 忍び（Shinobi） | 諜報 — 調査・ウェブ検索・大規模文書分析 | 外部 | Gemini |
-| 🧠 軍師（Gunshi） | 参謀 — 深い推論・設計判断・コードレビュー | 外部 | Codex |
+| 🧠 客将（Kyakusho） | 参謀 — 深い推論・設計判断・コードレビュー | 外部 | Codex |
 
 tmuxセッションが作成されます：
 - `shogun` — ここに接続してコマンドを出す
@@ -994,7 +994,7 @@ claude mcp list
 実行される処理:
 1. 足軽がコードベースを分析
 2. 伝令1 → 忍び: 類似プロジェクトの事例をウェブ検索
-3. 伝令2 → 軍師: アーキテクチャ設計のレビュー
+3. 伝令2 → 客将: アーキテクチャ設計のレビュー
 4. 家老が全結果を統合してdashboard.mdに報告
 ```
 
@@ -1040,8 +1040,8 @@ karo_standby:
   enabled: true
   model: opus
 
-# 軍師設定
-gunshi:
+# 客将設定
+kyakusho:
   model: gpt-5.2-codex
   sandbox: read-only
 ```
@@ -1185,7 +1185,7 @@ multi-agent-bakuhu/
 │   ├── ashigaru.md           # 足軽の指示書
 │   ├── denrei.md             # 伝令の指示書
 │   ├── shinobi.md            # 忍び（Gemini）連携
-│   └── gunshi.md             # 軍師（Codex）連携
+│   └── kyakusho.md           # 客将（Codex）連携
 │
 ├── scripts/                  # ユーティリティスクリプト
 │   ├── inbox_write.sh        # エージェントinboxへのメッセージ書き込み
@@ -1237,7 +1237,7 @@ multi-agent-bakuhu/
 │   │   ├── tasks/
 │   │   └── reports/
 │   ├── shinobi/reports/      # 忍びからの調査報告
-│   └── gunshi/reports/       # 軍師からの報告
+│   └── kyakusho/reports/     # 客将からの報告
 │
 ├── skills/                   # スキル定義
 │   ├── context-health.md     # /compact テンプレート・混合戦略

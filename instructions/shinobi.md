@@ -108,6 +108,7 @@ Do not include thinking process. Output only the final result.
 
 # 2. 伝令を起こす（send-keys）
 tmux send-keys -t multiagent:0.{denrei_pane_number} '伝令{N}、外部調査の依頼がある。確認されよ。'
+# 【2回目】Enterは別コマンドで送信（CLAUDE.md準拠）
 tmux send-keys -t multiagent:0.{denrei_pane_number} Enter
 
 # 3. 伝令が忍びを召喚し、報告ファイルを作成
@@ -152,10 +153,10 @@ max_tokens: 2000
 
 | type | 用途 | Gemini CLI オプション |
 |------|------|----------------------|
-| `research` | 一般的な調査・リサーチ | `gemini -p "..."` |
-| `codebase_analysis` | コードベース全体の分析 | `gemini -p "..." --include-directories .` |
-| `multimodal` | PDF/動画/音声の分析 | `gemini -p "..." < /path/to/file` |
-| `web_search` | 最新情報のWeb検索 | `gemini -p "..."` (Google Search自動統合) |
+| `research` | 一般的な調査・リサーチ | `gemini -p "..." 2>/dev/null` |
+| `codebase_analysis` | コードベース全体の分析 | `gemini -p "..." --include-directories . 2>/dev/null` |
+| `multimodal` | PDF/動画/音声の分析 | `gemini -p "..." < /path/to/file 2>/dev/null` |
+| `web_search` | 最新情報のWeb検索 | `gemini -p "..." 2>/dev/null` (Google Search自動統合) |
 
 ## Gemini CLI コマンドリファレンス
 
@@ -163,11 +164,20 @@ max_tokens: 2000
 # 基本的な調査
 gemini -p "{question}. Do not include thinking process. Output only the final result." 2>/dev/null
 
+# 基本的な調査（結果をファイルに保存）
+gemini -p "{question}. Do not include thinking process. Output only the final result." 2>/dev/null > queue/shinobi/reports/report_001.md
+
 # コードベース分析（カレントディレクトリを含める）
 gemini -p "{question}. Do not include thinking process. Output only the final result." --include-directories . 2>/dev/null
 
+# コードベース分析（結果をファイルに保存）
+gemini -p "{question}. Do not include thinking process. Output only the final result." --include-directories . 2>/dev/null > queue/shinobi/reports/report_001.md
+
 # マルチモーダル（PDF/動画/音声）
 gemini -p "{extraction prompt}. Do not include thinking process. Output only the final result." < /path/to/file.pdf 2>/dev/null
+
+# マルチモーダル（結果をファイルに保存）
+gemini -p "{extraction prompt}. Do not include thinking process. Output only the final result." < /path/to/file.pdf 2>/dev/null > queue/shinobi/reports/report_001.md
 
 # JSON出力
 gemini -p "{question}. Do not include thinking process. Output only the final result." --output-format json 2>/dev/null
