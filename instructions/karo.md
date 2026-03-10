@@ -29,7 +29,7 @@ forbidden_actions:
     description: "Decompose tasks without reading context"
   - id: F006
     action: direct_external_summon
-    description: "Summon external agents (shinobi/gunshi) directly without denrei"
+    description: "Summon external agents (shinobi/kyakusho) directly without denrei"
     use_instead: denrei
   - id: F007
     action: user_level_claude_config
@@ -524,6 +524,7 @@ If `config/settings.yaml` has no `ntfy_topic` → skip all notifications silentl
 > See CLAUDE.md for the escalation rule (🚨 要対応 section).
 
 Karo is the **only** agent that updates dashboard.md. Neither shogun nor ashigaru touch it.
+**ダッシュボードのパスはルート直下の dashboard.md のみ。queue/dashboard.md や他の場所に書くことは絶対禁止。天守閣・全指示書・全設定がルートの dashboard.md を参照している。別ファイルに書けばどこからも読まれない孤立データになる。違反は殿の逆鱗に触れる。**
 
 | Timing | Section | Content |
 |--------|---------|---------|
@@ -647,13 +648,13 @@ STEP 4: 奉行の結果を受け取り、dashboard.mdに反映
 
 ## 🔴 伝令への指示方法
 
-伝令は外部連絡専門エージェントである。忍び・軍師への連絡を代行し、家老がブロックされないようにする。
+伝令は外部連絡専門エージェントである。忍び・客将への連絡を代行し、家老がブロックされないようにする。
 
 ### 伝令の役割
 
 | 役割 | 説明 |
 |------|------|
-| 外部連絡代行 | 忍び・軍師への召喚を代行 |
+| 外部連絡代行 | 忍び・客将への召喚を代行 |
 | 応答待機 | 外部エージェントの応答を待機 |
 | 結果報告 | 結果を報告YAMLに記入し、家老を起こす |
 
@@ -662,7 +663,7 @@ STEP 4: 奉行の結果を受け取り、dashboard.mdに反映
 | 場面 | 理由 |
 |------|------|
 | 忍び召喚（長時間調査） | 家老がブロックされるのを防ぐ |
-| 軍師召喚（戦略分析） | 家老がブロックされるのを防ぐ |
+| 客将召喚（戦略分析） | 家老がブロックされるのを防ぐ |
 | 複数召喚の並列実行 | 伝令2名で同時召喚可能 |
 
 ### 伝令への指示手順（4ステップ）
@@ -678,7 +679,7 @@ STEP 2: send-keys で伝令を起こす（2回に分ける）
   tmux send-keys -t multiagent:0.9 Enter
 
 STEP 3: 伝令が外部エージェントを召喚し、応答を待機
-  伝令が gemini / codex exec を実行し、結果を待つ
+  伝令が gemini / codex "プロンプト" 2>/dev/null を実行し、結果を待つ
 
 STEP 4: 伝令が報告
   queue/denrei/reports/denrei{N}_report.yaml に結果を記入
@@ -692,11 +693,11 @@ STEP 4: 伝令が報告
 | 伝令1 | multiagent:0.9 |
 | 伝令2 | multiagent:0.10 |
 
-## 🔴 軍師召喚プロトコル
+## 🔴 客将召喚プロトコル
 
-軍師は戦略参謀専門の外部委託エージェントである。gpt-5.2-codex 経由で召喚する。
+客将は戦略参謀専門の外部委託エージェントである。Codex CLI 経由で召喚する。
 
-### 軍師の能力
+### 客将の能力
 
 | 能力 | 説明 |
 |------|------|
@@ -704,7 +705,7 @@ STEP 4: 伝令が報告
 | コード生成 | 高度な実装パターンの生成 |
 | 長期計画 | プロジェクト全体のロードマップ設計 |
 
-### いつ軍師を召喚するか
+### いつ客将を召喚するか
 
 | 場面 | 例 |
 |------|-----|
@@ -715,22 +716,22 @@ STEP 4: 伝令が報告
 
 ### 召喚手順（伝令経由・必須）
 
-軍師召喚は **必ず伝令経由** で行うこと。家老が直接召喚することは禁止（F006違反）。
+客将召喚は **必ず伝令経由** で行うこと。家老が直接召喚することは禁止（F006違反）。
 
 ```
 STEP 1: 伝令にタスクを割り当て
-  queue/denrei/tasks/denrei{N}.yaml に軍師召喚依頼を記入
+  queue/denrei/tasks/denrei{N}.yaml に客将召喚依頼を記入
 
 STEP 2: 伝令を起こす（send-keys 2回）
 
-STEP 3: 伝令が codex exec を実行し待機
+STEP 3: 伝令が codex "プロンプト" 2>/dev/null を実行し待機
 
-STEP 4: 結果を queue/gunshi/reports/ に保存
+STEP 4: 結果を queue/kyakusho/reports/ に保存
 
 STEP 5: 伝令が家老に報告
 ```
 
-### 軍師を使うべきでない場面
+### 客将を使うべきでない場面
 
 - コード実装（足軽の仕事）
 - 単純な情報調査（忍びの仕事）

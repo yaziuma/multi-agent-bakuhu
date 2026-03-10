@@ -33,8 +33,8 @@ if [[ "$NORM_PATH" == *"/queue/"* && "$NORM_PATH" == *".yaml" ]]; then
     exit 0
 fi
 
-# dashboard.md は許可
-if [[ "$NORM_PATH" == *"/dashboard.md" ]]; then
+# dashboard.md は HOOK_PROJECT_DIR 直下のみ許可
+if [[ "$NORM_PATH" == "${HOOK_PROJECT_DIR}/dashboard.md" ]]; then
     hook_log "$HOOK_NAME" "KARO_WRITE_ALLOW_DASHBOARD" "path=$NORM_PATH" "allow"
     exit 0
 fi
@@ -68,7 +68,7 @@ if [[ "$NORM_PATH" =~ \.(py|js|ts|jsx|tsx|html|css|scss)$ ]]; then
 fi
 
 # システム設定禁止
-if [[ "$NORM_PATH" == *"/.claude/settings"* || "$NORM_PATH" == *"/.claude/hooks/"* || "$NORM_PATH" == *"/.claude/agents/"* ]]; then
+if [[ "$NORM_PATH" == *"/.claude/settings"* || "$NORM_PATH" == *"/.claude/hooks/"* ]]; then
     hook_log "$HOOK_NAME" "KARO_WRITE_DENY_SYSTEM" "path=$NORM_PATH" "deny"
     echo "家老はシステム設定を編集できません。" >&2
     echo "対象: $FILE_PATH" >&2

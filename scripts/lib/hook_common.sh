@@ -13,6 +13,7 @@
 #   hook_log()                    - 構造化ログ出力
 #   read_command_from_stdin()     - stdin JSONからコマンド取得
 #   read_filepath_from_stdin()    - stdin JSONからファイルパス取得
+#   read_subagent_type_from_stdin() - stdin JSONからsubagent_type取得
 #   normalize_path()              - realpathでパス正規化
 
 # プロジェクトルートの解決
@@ -176,6 +177,20 @@ read_filepath_from_stdin() {
         fi
     fi
     echo "$filepath"
+}
+
+# === stdinからJSON読み取り(subagent_type取得) ===
+# 注意: stdinは一度しか読めないため、この関数は1回のhook実行で1回のみ呼ぶこと
+read_subagent_type_from_stdin() {
+    local subagent_type=""
+    if [[ ! -t 0 ]]; then
+        local json_input
+        json_input=$(cat)
+        if [[ -n "$json_input" ]] && command -v jq &>/dev/null; then
+            subagent_type=$(echo "$json_input" | jq -r '.tool_input.subagent_type // .subagent_type // empty' 2>/dev/null || echo "")
+        fi
+    fi
+    echo "$subagent_type"
 }
 
 # === パス正規化 ===

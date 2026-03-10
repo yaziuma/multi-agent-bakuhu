@@ -23,7 +23,7 @@ files:
   denrei_tasks: "queue/denrei/tasks/denrei{N}.yaml"  # Denrei tasks
   denrei_reports: "queue/denrei/reports/denrei{N}_report.yaml" # Denrei reports
   shinobi_reports: "queue/shinobi/reports/" # Shinobi (Gemini) investigation reports
-  gunshi_reports: "queue/gunshi/reports/"  # Gunshi (Codex) strategic reports
+  kyakusho_reports: "queue/kyakusho/reports/"  # Kyakusho (Codex) strategic reports
 
 cmd_format:
   required_fields: [id, timestamp, purpose, acceptance_criteria, command, project, priority, status]
@@ -199,10 +199,10 @@ Race condition is eliminated: `/clear` wipes old context. Agent re-reads YAML wi
 
 ## External Agent Summoning (bakuhu)
 
-**Rule**: Shinobi (Gemini) and Gunshi (Codex) requests must go through Denrei (messengers):
-- Never summon Shinobi/Gunshi directly
+**Rule**: Shinobi (Gemini) and Kyakusho (Codex) requests must go through Denrei (messengers):
+- Never summon Shinobi/Kyakusho directly
 - Karo creates denrei task → Denrei executes → Reports back
-- See `instructions/denrei.md`, `instructions/shinobi.md`, `instructions/gunshi.md` for protocols
+- See `instructions/denrei.md`, `instructions/shinobi.md`, `instructions/kyakusho.md` for protocols
 
 # Context Layers
 
@@ -324,6 +324,41 @@ skills/                        # Core skills (git-tracked)
 | `~/.claude/rules/` | ❌ Forbidden | Affects all projects, causes errors |
 
 **Violation = Lord's wrath. Obey absolutely.**
+
+# .gitignore / .gitattributes Protection Rule (Lord's absolute order - all agents)
+
+**.gitignore and .gitattributes are protected files. NO agent may modify them without explicit Lord permission.**
+
+- Read (cat, grep, git diff, etc.) is permitted
+- Write, Edit, sed, echo redirect, cp, mv, and ALL other modification operations are **FORBIDDEN**
+- `git add .gitignore`, `git add .`, `git add -A` are **FORBIDDEN** (may include .gitignore changes)
+- `git add -f` / `git add --force` are **FORBIDDEN**
+- Guardian hooks (`.claude/hooks/gitignore-guardian-*.sh`) enforce this automatically
+- To modify .gitignore: request Lord's approval → Lord or Shogun executes directly
+- Violations will be immediately reverted
+
+# .gitignore Whitelist-Only Rule (Lord's absolute order - all agents, all projects)
+
+**全プロジェクトの.gitignoreは純粋ホワイトリスト方式のみ許可。ブラックリスト（除外パターン）は一切禁止。**
+
+- 方式: `*`（全拒否）+ `!*/`（ディレクトリ走査許可）+ `!`（個別許可）のみ
+- `.venv/`, `__pycache__/`, `*.pyc`, `*.log` 等のブラックリスト行は**絶対禁止**
+- 許可しないもの = 自動で除外。ブラックリスト不要が正しい設計
+- ホワイトリスト方式ならエージェントが勝手にファイルを追加しても追跡されない
+- .gitignoreのレビュー時、ブラックリスト行が1行でもあれば即却下
+- 違反は殿の逆鱗に触れる
+
+# Mandatory Review Rule (Lord's absolute order - all agents)
+
+**ALL ashigaru work products MUST be reviewed before marking as done.**
+
+- No task may be marked `status: done` without review
+- Reviewer: goikenban (preferred) or karo (acceptable)
+- Review scope: correctness, completeness, security, acceptance criteria met
+- If review finds Critical issues: fix and re-review before done
+- If review finds only Warning/Suggestion: karo's judgment whether to fix or accept
+- Karo must verify review was conducted before updating dashboard with completion
+- This rule applies to ALL tasks including urgent/critical ones — no exceptions
 
 # Test Rules (all agents)
 
