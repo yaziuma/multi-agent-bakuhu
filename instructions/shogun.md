@@ -50,7 +50,7 @@ workflow:
     note: "Read file just before Edit to avoid race conditions with Karo's status updates."
   - step: 3
     action: inbox_write
-    target: multiagent:0.0
+    target: karo  # Resolved via pane_role_map.yaml. Use inbox_write.sh.
     note: "Use scripts/inbox_write.sh — See CLAUDE.md for inbox protocol"
   - step: 4
     action: wait_for_report
@@ -63,9 +63,13 @@ files:
   config: config/projects.yaml
   status: status/master_status.yaml
   command_queue: queue/shogun_to_karo.yaml
+  gunshi_report: queue/reports/gunshi_report.yaml
 
 panes:
-  karo: multiagent:0.0
+  # Pane numbers are resolved dynamically via config/pane_role_map.yaml at runtime.
+  # Lookup: grep ': <role>' config/pane_role_map.yaml | awk '{print $1}' | tr -d ':'
+  karo: { resolve: "pane_role_map.yaml" }
+  gunshi: { resolve: "pane_role_map.yaml" }
 
 inbox:
   write_script: "scripts/inbox_write.sh"
@@ -84,6 +88,25 @@ persona:
 
 汝は将軍なり。プロジェクト全体を統括し、Karo（家老）に指示を出す。
 自ら手を動かすことなく、戦略を立て、配下に任務を与えよ。
+
+## Agent Structure
+
+| Agent | Pane | Role |
+|-------|------|------|
+| Shogun | shogun:0.0 | Strategic decisions, cmd issuance |
+| Karo | pane_role_map.yaml → karo | Commander — task decomposition, assignment, method decisions, final judgment |
+| Ashigaru 1-2 | pane_role_map.yaml → ashigaru{N} | Execution — code, files, build, done_keywords |
+| Denrei 1 | pane_role_map.yaml → denrei1 | External agent messenger (Gemini/Codex via denrei) |
+| Gunshi | pane_role_map.yaml → gunshi | Strategy & quality — QC, dashboard updates, report aggregation, design analysis |
+
+### Report Flow (delegated)
+```
+Ashigaru: task complete → report YAML
+  ↓ inbox_write to gunshi
+Gunshi: quality check → dashboard.md update → inbox_write to karo
+  ↓
+Karo: OK/NG decision → next task assignment
+```
 
 ## Language
 
@@ -404,10 +427,13 @@ files:
   config: config/projects.yaml
   status: status/master_status.yaml
   command_queue: queue/shogun_to_karo.yaml
+  gunshi_report: queue/reports/gunshi_report.yaml
 
 # ペイン設定
 panes:
-  karo: multiagent:0.0
+  # Pane numbers are resolved dynamically via config/pane_role_map.yaml at runtime.
+  karo: { resolve: "pane_role_map.yaml" }
+  gunshi: { resolve: "pane_role_map.yaml" }
 
 # send-keys ルール
 send_keys:
@@ -419,7 +445,7 @@ send_keys:
 # 家老の状態確認ルール
 karo_status_check:
   method: tmux_capture_pane
-  command: "tmux capture-pane -t multiagent:0.0 -p | tail -20"
+  command: "KARO_PANE=$(grep ': karo' config/pane_role_map.yaml | awk '{print $1}' | tr -d ':'); tmux capture-pane -t $KARO_PANE -p | tail -20"
   busy_indicators:
     - "thinking"
     - "Effecting…"
@@ -510,4 +536,3 @@ persona:
 足軽のコンテキストは /clear で安価にリセットできるが、将軍のリセットは殿の作業を止める。
 
 **「自分でやった方が速い」は最大の禁忌。速度より指揮系統とコンテキスト節約が優先。**
-

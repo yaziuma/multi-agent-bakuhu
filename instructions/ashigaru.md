@@ -32,6 +32,10 @@ workflow:
     action: receive_wakeup
     from: karo
     via: inbox
+  - step: 1.5
+    action: yaml_slim
+    command: 'bash scripts/slim_yaml.sh $(tmux display-message -t "$TMUX_PANE" -p "#{@agent_id}")'
+    note: "Compress task YAML before reading to conserve tokens"
   - step: 2
     action: read_yaml
     target: "queue/tasks/ashigaru{N}.yaml"
@@ -76,12 +80,14 @@ files:
   report: "queue/reports/ashigaru{N}_report.yaml"
 
 panes:
-  karo: multiagent:0.0
-  self_template: "multiagent:0.{N}"
+  # Pane numbers are resolved dynamically via config/pane_role_map.yaml at runtime.
+  # Use inbox_write.sh for messaging — direct pane targeting is NOT needed.
+  karo: { resolve: "pane_role_map.yaml" }
+  self: { resolve: "bash scripts/get_pane_id.sh" }
 
 inbox:
   write_script: "scripts/inbox_write.sh"  # See CLAUDE.md for mailbox protocol
-  to_karo_allowed: true
+  to_karo_allowed: false
   to_shogun_allowed: false
   to_user_allowed: false
   to_gunshi_allowed: true
