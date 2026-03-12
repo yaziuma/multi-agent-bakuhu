@@ -398,13 +398,14 @@ If you prefer to install dependencies manually:
 | Agent | Role | Count |
 |-------|------|-------|
 | 🏯 Shogun | Supreme commander — receives your orders | 1 |
-| 📋 Karo | Manager — distributes tasks, quality checks | 1 (+1 standby) |
-| ⚔️ Ashigaru | Workers — execute implementation tasks in parallel | Configurable (default: 3–8) |
-| 📨 Denrei | Messengers — summon and relay with external agents | 2 |
+| 📋 Karo | Manager — distributes tasks, maintains dashboard | 1 (+1 standby) |
+| ⚔️ Ashigaru | Workers — execute implementation tasks in parallel | 2 |
+| 📨 Denrei | Messengers — summon and relay with external agents | 1 |
+| 🎯 Gunshi | Quality Controller — QC review, routes complex tasks to Opus | 1 |
 
 Two tmux sessions are created:
 - `shogun` — connect here to give commands
-- `multiagent` — Karo, Ashigaru, and Denrei running in the background
+- `multiagent` — Karo, Ashigaru, Denrei, and Gunshi running in the background
 
 ---
 
@@ -828,8 +829,9 @@ SayTask handles personal productivity (capture → schedule → remind). The cmd
 |-------|------|-------|-------|
 | **Shogun (将軍)** | Commander — receives your orders, delegates to Karo | Opus | 1 |
 | **Karo (家老)** | Steward — breaks tasks down, assigns to Ashigaru, maintains dashboard | Opus | 1 (+1 standby) |
-| **Ashigaru (足軽)** | Foot soldiers — execute tasks in parallel | Sonnet/Opus | Configurable (default: 3–8) |
-| **Denrei (伝令)** | Messengers — summon and relay with external agents | Haiku | 2 |
+| **Ashigaru (足軽)** | Foot soldiers — execute tasks in parallel | Sonnet/Opus | 2 |
+| **Denrei (伝令)** | Messengers — summon and relay with external agents | Haiku | 1 |
+| **Gunshi (軍師)** | Quality Controller — QC review of all Ashigaru output, routes L4+ tasks | Sonnet | 1 |
 | **Shinobi (忍び)** | Intelligence — research, web search, large document analysis | Gemini | External |
 | **Kyakusho (客将)** | Strategist — deep reasoning, code review, design decisions | Codex | External |
 
@@ -974,9 +976,10 @@ Each role has a dedicated memory file. Cross-role writes are blocked at the hook
 | Agent | Default Model | Thinking | Role |
 |-------|--------------|----------|------|
 | Shogun | Opus | **Enabled (high)** | Strategic advisor to the Lord. Use `--shogun-no-thinking` for relay-only mode |
-| Karo | Opus | Enabled | Task distribution, QC gate, dashboard management |
-| Ashigaru 1–N | Sonnet / Opus | Enabled | Implementation: code, research, file operations |
-| Denrei 1–2 | Haiku | Disabled | Relay tasks only — stateless messenger |
+| Karo | Opus | Enabled | Task distribution, bloom_routing, dashboard management |
+| Ashigaru 1–2 | Sonnet | Enabled | Implementation: code, research, file operations (L1–L3 tasks) |
+| Denrei 1 | Haiku | Disabled | Relay tasks only — stateless messenger |
+| Gunshi | Sonnet | Enabled | QC review of all Ashigaru output. L4–L6 tasks routed here |
 
 ### Battle Formations
 
@@ -986,6 +989,29 @@ Each role has a dedicated memory file. Cross-role writes are blocked at the hook
 | **Battle** (`-k` flag) | Opus | `./shutsujin_departure.sh -k` |
 
 By default, Ashigaru run on the cheaper Sonnet model. When it's crunch time, switch to Battle formation with `-k` (`--kessen`) for all-Opus maximum capability.
+
+### Bloom Routing (Dynamic Model Selection)
+
+Karo automatically routes tasks to the right model based on **Bloom's Taxonomy** complexity level (L1–L6):
+
+| Bloom Level | Complexity | Model | Agent |
+|-------------|-----------|-------|-------|
+| L1–L3 | Remember / Understand / Apply | Sonnet | Ashigaru |
+| L4–L6 | Analyze / Evaluate / Create | Opus | Gunshi |
+
+```yaml
+# In task YAML
+bloom_level: L5   # → Karo routes to Gunshi (Opus) automatically
+```
+
+- **L1 (Remember)**: Retrieve facts, find a file, check a value
+- **L2 (Understand)**: Explain code, summarize a report
+- **L3 (Apply)**: Write a function, fix a known bug
+- **L4 (Analyze)**: Diagnose root cause, compare approaches
+- **L5 (Evaluate)**: Design review, architectural judgment
+- **L6 (Create)**: Design a new system, write a spec from scratch
+
+Configured in `config/settings.yaml` → `bloom_routing: auto`.
 
 ### Task Dependencies (blockedBy)
 
