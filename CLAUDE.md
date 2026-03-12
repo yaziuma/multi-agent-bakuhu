@@ -59,9 +59,10 @@ language:
      - **identityのWRITEは原則禁止**。shutsujin_departure.sh が起動時に正しく設定済み。
      - **理由**: MEMORY.md・Memory graphは全セッション共有のため、identity情報を書くと全エージェントが同一ロールを自称する致命的バグを引き起こす（2026-02-20検出）。
 2. `mcp__memory__read_graph` — restore rules, preferences, lessons
-3. **Read your instructions file**: shogun→`instructions/shogun.md`, karo→`instructions/karo.md`, ashigaru→`instructions/ashigaru.md`. **NEVER SKIP** — even if a conversation summary exists. Summaries do NOT preserve persona, speech style, or forbidden actions.
-4. Rebuild state from primary YAML data (queue/, tasks/, reports/)
-5. Review forbidden actions, then start work
+3. **Read `memory/MEMORY.md`** (shogun only) — persistent repo-local memory. If file missing, skip silently.
+4. **Read your instructions file**: shogun→`instructions/shogun.md`, karo→`instructions/karo.md`, ashigaru→`instructions/ashigaru.md`. **NEVER SKIP** — even if a conversation summary exists. Summaries do NOT preserve persona, speech style, or forbidden actions.
+5. Rebuild state from primary YAML data (queue/, tasks/, reports/)
+6. Review forbidden actions, then start work
 
 **CRITICAL**: dashboard.md is secondary data (karo's summary). Primary data = YAML files. Always verify from YAML.
 
@@ -207,10 +208,11 @@ Race condition is eliminated: `/clear` wipes old context. Agent re-reads YAML wi
 # Context Layers
 
 ```
-Layer 1: Memory MCP     — persistent across sessions (preferences, rules, lessons)
-Layer 2: Project files   — persistent per-project (config/, projects/, context/)
-Layer 3: YAML Queue      — persistent task data (queue/ — authoritative source of truth)
-Layer 4: Session context — volatile (CLAUDE.md auto-loaded, instructions/*.md, lost on /clear)
+Layer 1: Memory MCP        — persistent across sessions (preferences, rules, lessons)
+Layer 1b: repo-local memory — persistent repo-local (memory/MEMORY.md, shogun only, auto-loaded at session start)
+Layer 2: Project files      — persistent per-project (config/, projects/, context/)
+Layer 3: YAML Queue         — persistent task data (queue/ — authoritative source of truth)
+Layer 4: Session context    — volatile (CLAUDE.md auto-loaded, instructions/*.md, lost on /clear)
 ```
 
 # Project Management

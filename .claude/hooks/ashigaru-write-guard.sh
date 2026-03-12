@@ -61,5 +61,13 @@ if [[ "$BASENAME" == "shogun.md" || "$BASENAME" == "karo.md" || "$BASENAME" == "
     exit 2
 fi
 
+# 保護ファイル（.gitignore/.gitattributes）禁止
+if [[ "$NORM_PATH" == *".gitignore" ]] || [[ "$NORM_PATH" == *".gitattributes" ]]; then
+    hook_log "$HOOK_NAME" "ASHIGARU_WRITE_DENY_PROTECTED" "path=$NORM_PATH" "deny"
+    echo "足軽は保護ファイルを変更できません。殿の許可が必要です。" >&2
+    echo "対象: $FILE_PATH" >&2
+    exit 2
+fi
+
 # デフォルト許可（足軽はソースコード編集が主務）
 exit 0
