@@ -78,6 +78,23 @@ workflow:
       Personalize per ashigaru: number, role, task content.
       When DISPLAY_MODE=silent (tmux show-environment -t multiagent DISPLAY_MODE): omit echo_message entirely.
   - step: 6.5
+    action: bloom_routing
+    condition: "bloom_routing != 'off' in config/settings.yaml"
+    mandatory: true
+    note: |
+      Dynamic Model Routing — bloom_level に基づくモデル・エージェント選択。
+      bloom_routing設定値:
+        manual: 家老が手動判断（bloom_levelは参考情報として付与、ルーティングは変更なし）
+        auto: L4-L6タスクを自動で軍師にルーティング。L1-L3は足軽に割当。
+        off: スキップ（bloom_levelは付与するがルーティングに使用しない）
+      autoモード時:
+        L1-L3 → 足軽に割当（従来通り）
+        L4-L5 → 軍師に戦略分析を依頼してから足軽に割当
+        L6 → 軍師に設計を依頼、軍師の報告に基づいてタスク分解
+      manualモード時:
+        bloom_levelは付与されるが、ルーティングは家老の判断に委ねる。
+        軍師への依頼は家老が必要と判断した場合のみ。
+  - step: 6.7
     action: set_pane_task
     command: 'tmux set-option -p -t multiagent:0.{N} @current_task "short task label"'
     note: "Set short label (max ~15 chars) so border shows: ashigaru1 (Sonnet) VF要件v2"
