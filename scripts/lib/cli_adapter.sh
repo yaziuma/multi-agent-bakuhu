@@ -1,41 +1,12 @@
 #!/bin/bash
-# cli_adapter.sh - CLIアダプタ共通関数
-# bloom_routingのモデル選択・エージェント検索に使用
+# scripts/lib/cli_adapter.sh — 後方互換wrapperシム
+# cmd_490で仮実装。cmd_491で lib/cli_adapter.sh に本家準拠の完全版を移植済み。
+# 本ファイルは後方互換のためwrapperとして残す。
 
-# get_recommended_model(bloom_level)
-# bloom_levelに基づく推奨モデルを返す
-# L1-L3 → sonnet, L4-L6 → opus
-get_recommended_model() {
-    local bloom_level="$1"
-    local level_num="${bloom_level#L}"
-    if [[ "$level_num" -le 3 ]]; then
-        echo "sonnet"
-    else
-        echo "opus"
-    fi
-}
-
-# find_agent_for_model(model_name)
-# 指定モデルが使用可能な空きエージェントを返す
-# pane_role_map.yaml から足軽一覧を取得し、idle状態のものを探す
-find_agent_for_model() {
-    local model_name="$1"
-    local project_root
-    project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-    local pane_map="${project_root}/config/pane_role_map.yaml"
-
-    if [[ ! -f "$pane_map" ]]; then
-        echo ""
-        return 1
-    fi
-
-    # pane_role_map.yamlから足軽一覧を取得
-    grep 'ashigaru' "$pane_map" | while IFS=': ' read -r pane role; do
-        local agent_model
-        agent_model=$(get_agent_model "$role" 2>/dev/null || echo "")
-        if [[ "$agent_model" == "$model_name" ]]; then
-            echo "$role"
-            return 0
-        fi
-    done
-}
+# lib/cli_adapter.sh の完全版をsource
+_SCRIPTS_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+_PROJECT_ROOT="$(cd "${_SCRIPTS_LIB_DIR}/../.." && pwd)"
+if [[ -f "${_PROJECT_ROOT}/lib/cli_adapter.sh" ]]; then
+    # shellcheck disable=SC1090
+    source "${_PROJECT_ROOT}/lib/cli_adapter.sh"
+fi
