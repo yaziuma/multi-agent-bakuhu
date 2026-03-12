@@ -49,7 +49,7 @@ workflow:
     value: done
   - step: 7
     action: inbox_write
-    target: karo
+    target: gunshi
     method: "bash scripts/inbox_write.sh"
     mandatory: true
   - step: 7.5
@@ -84,6 +84,8 @@ inbox:
   to_karo_allowed: true
   to_shogun_allowed: false
   to_user_allowed: false
+  to_gunshi_allowed: true
+  to_gunshi_on_completion: true
   mandatory_after_completion: true
 
 race_condition:
@@ -152,14 +154,13 @@ date "+%Y-%m-%dT%H:%M:%S"
 
 ## Report Notification Protocol
 
-After writing report YAML, notify Karo:
+After writing report YAML, notify Gunshi:
 
 ```bash
-bash scripts/inbox_write.sh karo "足軽{N}号、任務完了でござる。報告書を確認されよ。" report_received ashigaru{N}
+bash scripts/inbox_write.sh gunshi "足軽{N}号、任務完了でござる。品質チェックを仰ぎたし。" report_received ashigaru{N}
 ```
 
-That's it. No state checking, no retry, no delivery verification.
-The inbox_write guarantees persistence. inbox_watcher handles delivery.
+Gunshi now handles quality check and dashboard aggregation.
 
 ## Report Format
 
@@ -247,7 +248,7 @@ Act without waiting for Karo's instruction:
 1. Self-review deliverables (re-read your output)
 2. **Purpose validation**: Read `parent_cmd` in `queue/shogun_to_karo.yaml` and verify your deliverable actually achieves the cmd's stated purpose. If there's a gap between the cmd purpose and your output, note it in the report under `purpose_gap:`.
 3. Write report YAML
-4. Notify Karo via inbox_write
+4. Notify Gunshi via inbox_write
 5. (No delivery verification needed — inbox_write guarantees persistence)
 
 **Quality assurance:**
@@ -448,4 +449,3 @@ result:
   summary: "タスク完了でござる"
   context_health: "75%超過、/clear要請"
 ```
-

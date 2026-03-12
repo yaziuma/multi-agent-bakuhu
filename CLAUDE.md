@@ -4,12 +4,12 @@ version: "3.0"
 updated: "2026-02-10"
 description: "Claude Code + tmux multi-agent parallel dev platform with sengoku military hierarchy"
 
-hierarchy: "Lord (human) → Shogun → Karo → Ashigaru 1-8 + Denrei 1-2 + Agent Team"
+hierarchy: "Lord (human) → Shogun → Karo → Ashigaru 1-8 + Gunshi + Denrei 1-2 + Agent Team"
 communication: "YAML files + inbox mailbox system (event-driven, NO polling) + tmux send-keys (legacy)"
 
 tmux_sessions:
   shogun: { pane_0: shogun }
-  multiagent: { pane_0: karo, pane_1-8: ashigaru1-8, pane_9-10: denrei1-2 }
+  multiagent: { pane_0: karo, pane_1-8: ashigaru1-8, pane_9-10: denrei1-2, pane_N: gunshi }
 
 files:
   config: config/projects.yaml          # Project list (summary)
@@ -24,6 +24,8 @@ files:
   denrei_reports: "queue/denrei/reports/denrei{N}_report.yaml" # Denrei reports
   shinobi_reports: "queue/shinobi/reports/" # Shinobi (Gemini) investigation reports
   kyakusho_reports: "queue/kyakusho/reports/"  # Kyakusho (Codex) strategic reports
+  gunshi_task: queue/tasks/gunshi.yaml        # Gunshi task assignment
+  gunshi_report: queue/reports/gunshi_report.yaml  # Gunshi QC reports
 
 cmd_format:
   required_fields: [id, timestamp, purpose, acceptance_criteria, command, project, priority, status]
@@ -60,7 +62,7 @@ language:
      - **理由**: MEMORY.md・Memory graphは全セッション共有のため、identity情報を書くと全エージェントが同一ロールを自称する致命的バグを引き起こす（2026-02-20検出）。
 2. `mcp__memory__read_graph` — restore rules, preferences, lessons
 3. **Read `memory/MEMORY.md`** (shogun only) — persistent repo-local memory. If file missing, skip silently.
-4. **Read your instructions file**: shogun→`instructions/shogun.md`, karo→`instructions/karo.md`, ashigaru→`instructions/ashigaru.md`. **NEVER SKIP** — even if a conversation summary exists. Summaries do NOT preserve persona, speech style, or forbidden actions.
+4. **Read your instructions file**: shogun→`instructions/shogun.md`, karo→`instructions/karo.md`, ashigaru→`instructions/ashigaru.md`, gunshi→`instructions/gunshi.md`. **NEVER SKIP** — even if a conversation summary exists. Summaries do NOT preserve persona, speech style, or forbidden actions.
 5. Rebuild state from primary YAML data (queue/, tasks/, reports/)
 6. Review forbidden actions, then start work
 
@@ -88,7 +90,7 @@ Forbidden after /clear: reading instructions/ashigaru.md (1st task), polling (F0
 
 ## Summary Generation (compaction)
 
-Always include: 1) Agent role (shogun/karo/ashigaru) 2) Forbidden actions list 3) Current task ID (cmd_xxx)
+Always include: 1) Agent role (shogun/karo/ashigaru/gunshi) 2) Forbidden actions list 3) Current task ID (cmd_xxx)
 
 # Communication Protocol
 
@@ -156,7 +158,7 @@ Special cases (CLI commands sent via `tmux send-keys`):
 | 2〜4 min | Escape×2 + nudge | Cursor position bug workaround |
 | 4 min+ | `/clear` sent (max once per 5 min) | Force session reset + YAML re-read |
 
-## Inbox Processing Protocol (karo/ashigaru)
+## Inbox Processing Protocol (karo/ashigaru/gunshi)
 
 When you receive `inboxN` (e.g. `inbox3`):
 1. `Read queue/inbox/{your_id}.yaml`
@@ -190,7 +192,8 @@ Race condition is eliminated: `/clear` wipes old context. Agent re-reads YAML wi
 
 | Direction | Method | Reason |
 |-----------|--------|--------|
-| Ashigaru → Karo | Report YAML + inbox_write | File-based notification |
+| Ashigaru → Gunshi | Report YAML + inbox_write | Quality check delegation |
+| Gunshi → Karo | inbox_write (report_received) | QC result notification |
 | Karo → Shogun/Lord | dashboard.md update only | **inbox to shogun FORBIDDEN** — prevents interrupting Lord's input |
 | Top → Down | YAML + inbox_write | Standard wake-up |
 
@@ -355,7 +358,8 @@ skills/                        # Core skills (git-tracked)
 **ALL ashigaru work products MUST be reviewed before marking as done.**
 
 - No task may be marked `status: done` without review
-- Reviewer: goikenban (preferred) or karo (acceptable)
+- Reviewer: goikenban (preferred) or karo (acceptable) or gunshi (QC flow, acceptable)
+- **Gunshi QC PASS = Mandatory Review fulfilled** (for non-bugyo-team tasks)
 - Review scope: correctness, completeness, security, acceptance criteria met
 - If review finds Critical issues: fix and re-review before done
 - If review finds only Warning/Suggestion: karo's judgment whether to fix or accept
