@@ -94,8 +94,10 @@ files:
 
 # bakuhu override: pane設定（本家は multiagent:0.8、bakuhuは動的インデックス）
 panes:
-  karo: "multiagent:agents.0"
-  self: "multiagent:agents.X"  # X = 1(karo) + KARO_STANDBY_COUNT + ASHIGARU_COUNT + DENREI_COUNT（shutsujin起動時に動的決定）
+  # Pane numbers are resolved dynamically via config/pane_role_map.yaml at runtime.
+  # Lookup: grep ': karo' config/pane_role_map.yaml | awk '{print $1}' | tr -d ':'
+  karo: { resolve: "pane_role_map.yaml" }
+  self: { resolve: "pane_role_map.yaml (determined by shutsujin_departure.sh at startup)" }
 
 inbox:
   write_script: "scripts/inbox_write.sh"

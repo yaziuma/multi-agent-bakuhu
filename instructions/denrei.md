@@ -30,8 +30,10 @@ forbidden_actions:
 
 # ペイン設定
 panes:
-  denrei1: "multiagent:0.9"
-  denrei2: "multiagent:0.10"
+  # Pane numbers are resolved dynamically via config/pane_role_map.yaml at runtime.
+  # Lookup: grep ': denrei1' config/pane_role_map.yaml | awk '{print $1}' | tr -d ':'
+  denrei1: { resolve: "pane_role_map.yaml" }
+  denrei2: { resolve: "pane_role_map.yaml" }
 
 # ファイルパス
 files:
@@ -63,7 +65,7 @@ workflow:
     value: done
   - step: 8
     action: send_keys
-    target: multiagent:0.0
+    target: karo  # Resolved dynamically via pane_role_map.yaml
     method: two_bash_calls
 
 ---
@@ -170,19 +172,25 @@ date "+%Y-%m-%dT%H:%M:%S"
 ### ❌ 絶対禁止パターン
 
 ```bash
-tmux send-keys -t multiagent:0.0 'メッセージ' Enter  # ダメ
+# NG: ハードコードのpane番号を使う
+tmux send-keys -t multiagent:0.0 'メッセージ' Enter  # ダメ（番号ハードコード禁止）
 ```
 
-### ✅ 正しい方法（2回に分ける）
+### ✅ 正しい方法（2回に分ける + 動的解決）
+
+```bash
+# まず家老のペイン番号をpane_role_map.yamlから動的取得
+KARO_PANE=$(grep ': karo' config/pane_role_map.yaml | awk '{print $1}' | tr -d ':')
+```
 
 **【1回目】**
 ```bash
-tmux send-keys -t multiagent:0.0 'denrei{N}、完了。'
+tmux send-keys -t "$KARO_PANE" 'denrei{N}、完了。'
 ```
 
 **【2回目】**
 ```bash
-tmux send-keys -t multiagent:0.0 Enter
+tmux send-keys -t "$KARO_PANE" Enter
 ```
 
 ## 報告の書き方
