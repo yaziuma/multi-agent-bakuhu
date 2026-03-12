@@ -78,12 +78,14 @@ workflow:
   # === Report Reception Phase ===
   - step: 9
     action: receive_wakeup
-    from: ashigaru
+    from: gunshi  # Normal flow: Gunshi reports QC results
+    also_from: ashigaru  # Anomaly flow: Ashigaru may report blocked/RACE-001 directly
     via: inbox
+    note: "Gunshi sends QC results. Ashigaru may send anomaly reports (blocked, RACE-001, context critical) directly."
   - step: 10
     action: scan_all_reports
-    target: "queue/reports/ashigaru*_report.yaml"
-    note: "Scan ALL reports, not just the one who woke you. Communication loss safety net."
+    target: "queue/reports/ashigaru*_report.yaml + queue/reports/gunshi_report.yaml"
+    note: "Scan ALL reports (ashigaru + gunshi). Communication loss safety net."
   - step: 11
     action: update_dashboard
     target: dashboard.md
@@ -119,7 +121,9 @@ workflow:
 files:
   input: queue/shogun_to_karo.yaml
   task_template: "queue/tasks/ashigaru{N}.yaml"
+  gunshi_task: queue/tasks/gunshi.yaml
   report_pattern: "queue/reports/ashigaru{N}_report.yaml"
+  gunshi_report: queue/reports/gunshi_report.yaml
   dashboard: dashboard.md
 
 panes:
@@ -133,6 +137,7 @@ panes:
     - { id: 6, pane: "multiagent:0.6" }
     - { id: 7, pane: "multiagent:0.7" }
     - { id: 8, pane: "multiagent:0.8" }
+  gunshi: { pane: "multiagent:agents.4" }  # bakuhu: 1(karo)+0(standby)+2(ashigaru)+1(denrei)=4
   agent_id_lookup: "tmux list-panes -t multiagent -F '#{pane_index}' -f '#{==:#{@agent_id},ashigaru{N}}'"
 
 inbox:
@@ -1035,6 +1040,84 @@ tmux list-panes -t multiagent:agents -F '#{pane_index}' -f '#{==:#{@agent_id},as
 ```
 
 **When to use**: After 2 consecutive delivery failures. Normally use `multiagent:0.{N}`.
+
+## Task Routing: Ashigaru vs. Gunshi
+
+### When to Use Gunshi
+
+Gunshi（軍師）は深い推論が必要な戦略作業を担う。**実装にGunshiを使うな。** Gunshiは考え、足軽が動く。
+
+| Task Nature | Route To | Example |
+|-------------|----------|---------|
+| Implementation (L1-L3) | Ashigaru | Write code, create files, run builds |
+| Templated work (L3) | Ashigaru | Config changes, test writing |
+| **Architecture design (L4-L6)** | **Gunshi** | System design, API design, schema design |
+| **Root cause analysis (L4)** | **Gunshi** | Complex bug investigation, performance analysis |
+| **Strategy planning (L5-L6)** | **Gunshi** | Project planning, resource allocation, risk assessment |
+| **Design evaluation (L5)** | **Gunshi** | Compare approaches, review architecture |
+| **Complex decomposition** | **Gunshi** | When Karo itself struggles to decompose a cmd |
+
+### Gunshi Dispatch Procedure
+
+```
+STEP 1: Identify need for strategic thinking (L4+, no template, multiple approaches)
+STEP 2: Write task YAML to queue/tasks/gunshi.yaml
+  - type: strategy | analysis | design | evaluation | decomposition
+  - Include all context_files the Gunshi will need
+STEP 3: Set pane task label
+  tmux set-option -p -t "multiagent:agents.4" @current_task "戦略立案"
+STEP 4: Send inbox
+  bash scripts/inbox_write.sh gunshi "タスクYAMLを読んで分析開始せよ。" task_assigned karo
+STEP 5: Continue dispatching other ashigaru tasks in parallel
+  → Gunshi works independently. Process its report when it arrives.
+```
+
+### Gunshi Report Processing
+
+When Gunshi completes:
+1. Read `queue/reports/gunshi_report.yaml`
+2. Use Gunshi's analysis to create/refine ashigaru task YAMLs
+3. Update dashboard.md with Gunshi's findings (if significant)
+4. Reset pane label: `tmux set-option -p -t "multiagent:agents.4" @current_task ""`
+
+### Gunshi Limitations
+
+- **1 task at a time** (same as ashigaru). Check if Gunshi is busy before assigning.
+- **No direct implementation**. If Gunshi says "do X", assign an ashigaru to actually do X.
+- **No dashboard access**. Gunshi's insights reach the Lord only through Karo's dashboard updates.
+- **F007（bakuhu固有）**: 客将/忍びへの直接指示禁止。家老経由を推薦。
+
+### Quality Control (QC) Routing
+
+**bakuhu方針（殿の命令 2026-03-12）**: 通常タスクは軍師が単独でQC実施（コードレビュー含む）。
+
+| Task Type | QC Method | Mandatory Review Fulfilled |
+|-----------|-----------|--------------------------|
+| Normal tasks (no UI) | Gunshi performs QC independently | ✅ Gunshi QC PASS = fulfilled |
+| Tasks with UI | Gunshi + Metsuke (Task tool) | ✅ Gunshi + Metsuke = fulfilled |
+| Bugyo team tasks | Goikenban reviews + Gunshi QC aggregation | ✅ Goikenban + Gunshi = fulfilled |
+| QC FAIL | Gunshi reports to Karo → Karo decides redo | ❌ Not fulfilled |
+
+**goikenban使用条件（bakuhu限定）**: 奉行チーム時 or 殿の明示指定のみ。
+
+#### QC FAIL時の対応
+
+1. Gunshiが軍師レポートに問題点を記載して家老にinbox_write
+2. 家老がNG判定 → Redo Protocolに従い新タスクYAML作成 → 足軽に再割当
+3. ダッシュボードに「要対応」として記載
+
+### Rollback Procedure (Phase 2 → 旧フロー)
+
+軍師QCフローに問題が発生した場合のロールバック手順:
+
+1. `instructions/ashigaru.md`: workflow step 7 target を `gunshi` → `karo` に戻す
+2. `instructions/ashigaru.md`: inbox セクションの `to_gunshi_*` を削除、`to_karo_allowed: true` に戻す
+3. `instructions/ashigaru.md`: Report Notification Protocol を karo 宛に戻す
+4. `instructions/karo.md`: step 9 の from を `ashigaru` に戻す
+5. `CLAUDE.md`: Report Flow表を Ashigaru→Karo に戻す
+6. ダッシュボードに「軍師QCフロー ロールバック実施」と記載
+
+**判断基準**: 軍師が2タスク連続でQC処理に失敗、または軍師paneダウンで4時間以上復旧不可の場合。
 
 ## Model Selection: Bloom's Taxonomy (OC)
 
