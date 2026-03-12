@@ -91,6 +91,20 @@ if [ "${__INBOX_WATCHER_TESTING__:-}" != "1" ]; then
         echo "[inbox_watcher] ERROR: inotifywait not found. Install: sudo apt install inotify-tools" >&2
         exit 1
     fi
+
+    # Source shared agent status library (busy/idle detection)
+    _agent_status_lib="$SCRIPT_DIR/lib/agent_status.sh"
+    if [ -f "$_agent_status_lib" ]; then
+        source "$_agent_status_lib"
+        echo "[$(date)] lib/agent_status.sh loaded" >&2
+    fi
+
+    # Fix: CLI starts at welcome screen = idle. Create idle flag so watcher
+    # doesn't false-busy deadlock waiting for a stop_hook that never fires.
+    if [[ "${CLI_TYPE:-claude}" == "claude" ]]; then
+        touch "${IDLE_FLAG_DIR:-/tmp}/shogun_idle_${AGENT_ID}"
+        echo "[$(date)] Created initial idle flag for $AGENT_ID (CLI starts idle)" >&2
+    fi
 fi
 
 # ─── Escalation state ───
@@ -106,7 +120,7 @@ ESCALATE_COOLDOWN=${ESCALATE_COOLDOWN:-300}
 #   1 = self-watch base (compatible)
 #   2 = disable normal nudge by default
 #   3 = FINAL_ESCALATION_ONLY (send-keys is fallback only)
-ASW_PHASE=${ASW_PHASE:-1}
+ASW_PHASE=${ASW_PHASE:-2}
 ASW_DISABLE_NORMAL_NUDGE=${ASW_DISABLE_NORMAL_NUDGE:-$([ "${ASW_PHASE}" -ge 2 ] && echo 1 || echo 0)}
 ASW_FINAL_ESCALATION_ONLY=${ASW_FINAL_ESCALATION_ONLY:-$([ "${ASW_PHASE}" -ge 3 ] && echo 1 || echo 0)}
 FINAL_ESCALATION_ONLY=${FINAL_ESCALATION_ONLY:-$ASW_FINAL_ESCALATION_ONLY}
@@ -150,7 +164,16 @@ EOF
 }
 
 disable_normal_nudge() {
-    [ "${ASW_DISABLE_NORMAL_NUDGE:-0}" = "1" ]
+    # Phase 2+: suppress nudge ONLY when agent is busy.
+    # If agent is idle (flag exists), nudge is needed (stop hook won't fire for idle agents).
+    if [ "${ASW_DISABLE_NORMAL_NUDGE:-0}" != "1" ]; then
+        return 1  # Phase 1: never suppress
+    fi
+    # Phase 2+: check if agent is idle via flag file
+    if [ -f "${IDLE_FLAG_DIR:-/tmp}/shogun_idle_${AGENT_ID}" ]; then
+        return 1  # Agent is IDLE → don't suppress, send nudge
+    fi
+    return 0  # Agent is BUSY → suppress, stop hook will deliver
 }
 
 is_valid_cli_type() {
@@ -354,6 +377,20 @@ send_cli_command() {
     local effective_cli
     effective_cli=$(get_effective_cli_type)
 
+    # Safety: never inject CLI commands into the shogun pane.
+    # Shogun is controlled by the Lord; keystroke injection can clobber human input.
+    if [ "$AGENT_ID" = "shogun" ]; then
+        echo "[$(date)] [SKIP] shogun: suppressing CLI command injection ($cmd)" >&2
+        return 0
+    fi
+
+    # Busy guard: never send /clear when agent is actively processing.
+    # Sending /clear during Working destroys in-progress context and causes data loss.
+    if [[ "$cmd" == "/clear" ]] && agent_is_busy; then
+        echo "[$(date)] [SKIP] Agent is busy — /clear deferred to next cycle (agent=$AGENT_ID)" >&2
+        return 0
+    fi
+
     # CLI別コマンド変換
     local actual_cmd="$cmd"
     case "$effective_cli" in
@@ -406,6 +443,7 @@ send_cli_command() {
 
     # /clear needs extra wait time before follow-up
     if [[ "$actual_cmd" == "/clear" ]]; then
+        LAST_CLEAR_TS=$(date +%s)
         sleep 3
     else
         sleep 1
@@ -423,15 +461,39 @@ agent_has_self_watch() {
 # Check if the agent's CLI is currently processing (Working/thinking/etc).
 # Sending nudge during Working causes text to queue but Enter to be lost.
 # Returns 0 (true) if agent is busy, 1 if idle.
+#
+# For Claude Code: uses idle flag file (/tmp/shogun_idle_{AGENT_ID}).
+#   - Flag exists → agent is idle (stop_hook created it on turn end)
+#   - Flag absent → agent is busy (stop_hook removed it on tool start)
+#   - /clear cooldown: treat as busy for 30s after /clear (avoid race conditions)
+# Fallback: pane-text analysis via lib/agent_status.sh (for non-Claude CLIs)
 agent_is_busy() {
-    local pane_content
-    pane_content=$(timeout 2 tmux capture-pane -t "$PANE_TARGET" -p 2>/dev/null | tail -15)
-    # Codex CLI: "Working", "Thinking", "Planning", "Sending"
-    # Claude CLI: thinking spinner, tool execution
-    if echo "$pane_content" | grep -qiE '(Working|Thinking|Planning|Sending|esc to interrupt)'; then
-        return 0  # busy
+    # /clear cooldown: treat agent as busy for 30s after /clear was sent.
+    # Claude Code's /clear takes 10-30s (CLAUDE.md reload + context init).
+    # Without this, nudges sent during /clear processing queue up at the prompt
+    # and cause race conditions (inbox1 arrives before /clear completes).
+    local now_busy
+    now_busy=$(date +%s)
+    if [ "${LAST_CLEAR_TS:-0}" -gt 0 ] && [ "$((now_busy - LAST_CLEAR_TS))" -lt 30 ]; then
+        return 0  # busy — /clear still processing
     fi
-    return 1  # idle
+
+    local effective_cli
+    effective_cli=$(get_effective_cli_type)
+    if [[ "$effective_cli" == "claude" ]]; then
+        # フラグファイル方式: フラグなし=busy(return 0)、あり=idle(return 1)
+        [ ! -f "${IDLE_FLAG_DIR:-/tmp}/shogun_idle_${AGENT_ID}" ]
+    else
+        # 従来のpane解析（Codex等フォールバック）— lib/agent_status.sh が必要
+        if type agent_is_busy_check &>/dev/null; then
+            agent_is_busy_check "$PANE_TARGET"
+        else
+            # lib/agent_status.sh 未ロード時のフォールバック
+            local pane_content
+            pane_content=$(timeout 2 tmux capture-pane -t "$PANE_TARGET" -p 2>/dev/null | tail -5)
+            echo "$pane_content" | grep -qiE '(Working|Thinking|Planning|Sending|esc to interrupt)'
+        fi
+    fi
 }
 
 # ─── Send wake-up nudge ───
@@ -465,6 +527,8 @@ send_wakeup() {
     if timeout 5 tmux send-keys -t "$PANE_TARGET" "$nudge" 2>/dev/null; then
         sleep 0.3
         timeout 5 tmux send-keys -t "$PANE_TARGET" Enter 2>/dev/null
+        # Nudge sent = agent is about to start a new turn → remove idle flag
+        rm -f "${IDLE_FLAG_DIR:-/tmp}/shogun_idle_${AGENT_ID}" 2>/dev/null || true
         echo "[$(date)] Wake-up sent to $AGENT_ID (${unread_count} unread)" >&2
         return 0
     fi
@@ -511,6 +575,8 @@ send_wakeup_with_escape() {
     if timeout 5 tmux send-keys -t "$PANE_TARGET" "$nudge" 2>/dev/null; then
         sleep 0.3
         timeout 5 tmux send-keys -t "$PANE_TARGET" Enter 2>/dev/null
+        # Nudge sent = agent is about to start a new turn → remove idle flag
+        rm -f "${IDLE_FLAG_DIR:-/tmp}/shogun_idle_${AGENT_ID}" 2>/dev/null || true
         echo "[$(date)] Escape+nudge sent to $AGENT_ID (${unread_count} unread, cli=$effective_cli, C-c=$c_ctrl_state)" >&2
         return 0
     fi
@@ -536,6 +602,8 @@ process_unread() {
             echo "[$(date)] All messages read for $AGENT_ID — escalation reset (fast-path)" >&2
         fi
         FIRST_UNREAD_SEEN=0
+        # Ensure idle flag exists (fast-path recovery)
+        touch "${IDLE_FLAG_DIR:-/tmp}/shogun_idle_${AGENT_ID}" 2>/dev/null || true
         if ! agent_is_busy; then
             timeout 2 tmux send-keys -t "$PANE_TARGET" C-u 2>/dev/null
         fi
@@ -562,22 +630,23 @@ for s in data.get('specials', []):
     print(f'{t}\t{c}')
 " 2>/dev/null)
 
-    local clear_seen=0
+    local clear_sent=0
     if [ -n "$specials" ]; then
         local msg_type msg_content cmd
         while IFS=$'\t' read -r msg_type msg_content; do
             [ -n "$msg_type" ] || continue
-            if [ "$msg_type" = "clear_command" ]; then
-                clear_seen=1
-            fi
             cmd=$(normalize_special_command "$msg_type" "$msg_content")
-            [ -n "$cmd" ] && send_cli_command "$cmd"
+            if [ -n "$cmd" ]; then
+                send_cli_command "$cmd"
+                [ "$msg_type" = "clear_command" ] && clear_sent=1
+            fi
         done <<< "$specials"
     fi
 
     # /clear は Codex で /new へ変換される。再起動直後の取りこぼし防止として
     # 追加 task_assigned を自動投入し、次サイクルで確実に wake-up 可能にする。
-    if [ "$clear_seen" -eq 1 ]; then
+    # clear_sent（実際に送信）のみ発動。busy時スキップは対象外。
+    if [ "$clear_sent" -eq 1 ]; then
         local recovery_id
         recovery_id=$(enqueue_recovery_task_assigned)
         if [ -n "$recovery_id" ] && [ "$recovery_id" != "SKIP_DUPLICATE" ] && [ "$recovery_id" != "ERROR" ]; then
@@ -593,6 +662,25 @@ for s in data.get('specials', []):
     if [ "$normal_count" -gt 0 ] 2>/dev/null; then
         local now
         now=$(date +%s)
+
+        # ─── False-busy safety net ───
+        # When agent has been "busy" for >5 minutes with unread messages,
+        # force-create idle flag to break false-busy deadlock.
+        # This recovers from cases where stop_hook failed to create the flag.
+        if agent_is_busy; then
+            local stale_busy_limit=300  # 5 minutes
+            if [ "${FIRST_UNREAD_SEEN:-0}" -gt 0 ] && [ "$((now - FIRST_UNREAD_SEEN))" -ge "$stale_busy_limit" ]; then
+                echo "[$(date)] WARNING: $AGENT_ID busy for $((now - FIRST_UNREAD_SEEN))s with $normal_count unread — forcing idle flag (stale busy recovery)" >&2
+                touch "${IDLE_FLAG_DIR:-/tmp}/shogun_idle_${AGENT_ID}"
+                # Fall through to normal nudge/escalation below
+            else
+                echo "[$(date)] [SKIP] Agent $AGENT_ID is busy (Working), deferring nudge" >&2
+                if [ "${FIRST_UNREAD_SEEN:-0}" -eq 0 ]; then
+                    FIRST_UNREAD_SEEN=$now
+                fi
+                return 0
+            fi
+        fi
 
         # Track when we first saw unread messages
         if [ "$FIRST_UNREAD_SEEN" -eq 0 ]; then
@@ -642,6 +730,9 @@ for s in data.get('specials', []):
             echo "[$(date)] All messages read for $AGENT_ID — escalation reset" >&2
         fi
         FIRST_UNREAD_SEEN=0
+        # Ensure idle flag exists when all messages are read.
+        # Recovers from stop_hook_inbox.sh flag loss during block cycles.
+        touch "${IDLE_FLAG_DIR:-/tmp}/shogun_idle_${AGENT_ID}" 2>/dev/null || true
         # Clear stale nudge text from input field (Codex CLI prefills last input on idle).
         # Only send C-u when agent is idle — during Working it would be disruptive.
         if ! agent_is_busy; then

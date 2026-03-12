@@ -46,6 +46,17 @@ if [ -f "./config/settings.yaml" ]; then
     fi
 fi
 
+# bakuhu override: 軍師の設定を読み取り（デフォルト: false / 段階的導入フラグ）
+GUNSHI_ENABLED=false
+GUNSHI_COUNT=0
+if [ -f "./config/settings.yaml" ]; then
+    _gunshi=$(awk '/^gunshi:/{flag=1; next} /^[a-z_]+:/{flag=0} flag' ./config/settings.yaml | awk '/^  +enabled:/ {print $2}' 2>/dev/null || echo "false")
+    if [ "$_gunshi" = "true" ]; then
+        GUNSHI_ENABLED=true
+        GUNSHI_COUNT=1
+    fi
+fi
+
 # 控え家老の設定を読み取り（デフォルト: false）
 KARO_STANDBY=false
 if [ -f "./config/settings.yaml" ]; then
@@ -190,9 +201,11 @@ while [[ $# -gt 0 ]]; do
             echo "  足軽1-4:   Sonnet"
             echo "  足軽5-8:   Opus"
             echo "  伝令:      Haiku"
+            echo "  軍師:      Opus（gunshi.enabled: trueで有効化）"
             echo ""
             echo "足軽の人数: config/settings.yaml の ashigaru_count で設定（1-8、デフォルト8）"
             echo "伝令の人数: config/settings.yaml の denrei.max_count で設定（1-2、デフォルト2）"
+            echo "軍師:       config/settings.yaml の gunshi.enabled で有効化（デフォルト: false）"
             echo ""
             echo "陣形:"
             echo "  平時の陣（デフォルト）: 足軽1-4=Sonnet, 足軽5以上=Opus"
@@ -430,6 +443,11 @@ EOF
         echo "messages:" > "./queue/inbox/${agent}.yaml"
     done
 
+    # bakuhu override: 軍師inboxリセット（enabled=true時のみ）
+    if [ "$GUNSHI_ENABLED" = true ]; then
+        echo "messages:" > "./queue/inbox/gunshi.yaml"
+    fi
+
     log_success "✅ 陣払い完了"
 else
     log_info "📜 前回の陣容を維持して出陣..."
@@ -554,8 +572,8 @@ KARO_STANDBY_COUNT=0
 if [ "$KARO_STANDBY" = true ]; then
     KARO_STANDBY_COUNT=1
 fi
-TOTAL_PANES=$((1 + KARO_STANDBY_COUNT + ASHIGARU_COUNT + DENREI_COUNT))  # karo + 控え家老 + 足軽 + 伝令
-log_war "⚔️ 家老・足軽・伝令の陣を構築中（${TOTAL_PANES}名配備）..."
+TOTAL_PANES=$((1 + KARO_STANDBY_COUNT + ASHIGARU_COUNT + DENREI_COUNT + GUNSHI_COUNT))  # karo + 控え家老 + 足軽 + 伝令 + 軍師(optional)
+log_war "⚔️ 家老・足軽・伝令・軍師の陣を構築中（${TOTAL_PANES}名配備）..."
 
 # 最初のペイン作成
 if ! tmux new-session -d -s multiagent -n "agents" 2>/dev/null; then
@@ -635,6 +653,15 @@ for i in $(seq 1 $DENREI_COUNT); do
     AGENT_IDS+=("denrei${i}")
     MODEL_NAMES+=("Haiku")
 done
+
+# bakuhu override: 軍師の設定を追加（enabled=true時のみ）
+if [ "$GUNSHI_ENABLED" = true ]; then
+    PANE_LABELS+=("gunshi")
+    PANE_TITLES+=("gunshi(Opus)")
+    PANE_COLORS+=("magenta")
+    AGENT_IDS+=("gunshi")
+    MODEL_NAMES+=("Opus")
+fi
 
 # CLI Adapter経由でモデル名を動的に上書き
 if [ "$CLI_ADAPTER_LOADED" = true ]; then
@@ -874,6 +901,8 @@ if [ "$SETUP_ONLY" = false ]; then
 
     # 伝令: Haiku（CLI Adapter経由）
     DENREI_OFFSET=$((ASHIGARU_OFFSET + ASHIGARU_COUNT))
+    # bakuhu override: 軍師オフセット（伝令の後）
+    GUNSHI_OFFSET=$((DENREI_OFFSET + DENREI_COUNT))
     for i in $(seq 1 $DENREI_COUNT); do
         p=$((PANE_BASE + DENREI_OFFSET + i - 1))
         _denrei_cli_type="claude"
@@ -888,6 +917,21 @@ if [ "$SETUP_ONLY" = false ]; then
     done
     if [ "$DENREI_COUNT" -gt 0 ]; then
         log_info "  └─ 伝令1-${DENREI_COUNT}（Haiku）、召喚完了"
+    fi
+
+    # bakuhu override: 軍師（Opus）起動（enabled=true時のみ）
+    if [ "$GUNSHI_ENABLED" = true ]; then
+        p=$((PANE_BASE + GUNSHI_OFFSET))
+        _gunshi_cli_type="claude"
+        _gunshi_cmd="claude --model opus --dangerously-skip-permissions"
+        if [ "$CLI_ADAPTER_LOADED" = true ]; then
+            _gunshi_cli_type=$(get_cli_type "gunshi")
+            _gunshi_cmd=$(build_cli_command "gunshi")
+        fi
+        tmux set-option -p -t "multiagent:agents.${p}" @agent_cli "$_gunshi_cli_type"
+        tmux send-keys -t "multiagent:agents.${p}" "$_gunshi_cmd"
+        tmux send-keys -t "multiagent:agents.${p}" Enter
+        log_info "  └─ 軍師（Opus）、召喚完了"
     fi
 
     if [ "$KESSEN_MODE" = true ]; then
@@ -995,6 +1039,11 @@ NINJA_EOF
         [ -f "$SCRIPT_DIR/queue/inbox/karo_standby.yaml" ] || echo "messages:" > "$SCRIPT_DIR/queue/inbox/karo_standby.yaml"
     fi
 
+    # bakuhu override: 軍師のinbox初期化（enabled=true時のみ）
+    if [ "$GUNSHI_ENABLED" = true ]; then
+        [ -f "$SCRIPT_DIR/queue/inbox/gunshi.yaml" ] || echo "messages:" > "$SCRIPT_DIR/queue/inbox/gunshi.yaml"
+    fi
+
     # 既存のwatcherと孤児inotifywaitをkill
     pkill -f "inbox_watcher.sh" 2>/dev/null || true
     pkill -f "inotifywait.*queue/inbox" 2>/dev/null || true
@@ -1041,10 +1090,20 @@ NINJA_EOF
         disown
     done
 
+    # bakuhu override: 軍師のwatcher（enabled=true時のみ）
+    if [ "$GUNSHI_ENABLED" = true ]; then
+        p=$((PANE_BASE + GUNSHI_OFFSET))
+        _gunshi_watcher_cli=$(tmux show-options -p -t "multiagent:agents.${p}" -v @agent_cli 2>/dev/null || echo "claude")
+        nohup bash "$SCRIPT_DIR/scripts/inbox_watcher.sh" "gunshi" "multiagent:agents.${p}" "$_gunshi_watcher_cli" \
+            >> "$SCRIPT_DIR/logs/inbox_watcher_gunshi.log" 2>&1 &
+        disown
+        log_info "  └─ 軍師のinbox_watcher起動完了"
+    fi
+
     if [ "$KARO_STANDBY" = true ]; then
-        log_success "  └─ $((1 + 1 + ASHIGARU_COUNT + DENREI_COUNT))エージェント分のinbox_watcher起動完了（控え家老含む）"
+        log_success "  └─ $((1 + 1 + ASHIGARU_COUNT + DENREI_COUNT + GUNSHI_COUNT))エージェント分のinbox_watcher起動完了（控え家老含む）"
     else
-        log_success "  └─ $((1 + ASHIGARU_COUNT + DENREI_COUNT))エージェント分のinbox_watcher起動完了"
+        log_success "  └─ $((1 + ASHIGARU_COUNT + DENREI_COUNT + GUNSHI_COUNT))エージェント分のinbox_watcher起動完了"
     fi
 
     # STEP 6.7 は廃止 — CLAUDE.md Session Start (step 1: tmux agent_id) で各自が自律的に
@@ -1113,6 +1172,10 @@ if [ "$DENREI_COUNT" -gt 0 ]; then
     for i in $(seq 1 $DENREI_COUNT); do
         echo "     │  denrei${i} (伝令${i})           │"
     done
+fi
+if [ "$GUNSHI_ENABLED" = true ]; then
+    echo "     ├─────────────────────────────┤"
+    echo "     │  gunshi (軍師)               │  ← QC統括・L4-L6分析"
 fi
 echo "     └─────────────────────────────┘"
 echo "     ※ 実際のレイアウトは tiled 配置"

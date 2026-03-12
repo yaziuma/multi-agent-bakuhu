@@ -18,9 +18,10 @@ if [[ ! -t 0 ]]; then
     fi
 fi
 
-# file_pathが取得できない場合は通す（hookの対象外）
+# file_pathが取得できない場合は安全のためデフォルト拒否（fail-closed）
 if [[ -z "$FILE_PATH" ]]; then
-    exit 0
+    echo "BLOCKED: FILE_PATH取得失敗。安全のためデフォルト拒否。" >&2
+    exit 2
 fi
 
 # .gitignore または .gitattributes で終わる場合はブロック
