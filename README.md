@@ -63,19 +63,20 @@ You watch the dashboard. That's it.
       │    KARO     │  ← Distributes tasks, manages dashboard
       └──────┬──────┘
              │
-    ┌─┬─┬─┬─┴─┬─┬─┬─┬──┬──┐
-    │1│2│3│4│5│6│7│8│D1│D2│  ← Workers + Messengers
-    └─┴─┴─┴─┴─┴─┴─┴─┴──┴──┘
-     ASHIGARU 1-8         DENREI 1-2
-                              │
-                    ┌─────────┴──────────┐
-                    ▼                    ▼
-              ┌──────────┐        ┌──────────┐
-              │  SHINOBI │        │ KYAKUSHO │
-              │ (Gemini) │        │ (Codex)  │
-              └──────────┘        └──────────┘
-               Intelligence        Strategic
-               & Research           Advisor
+    ┌─┬─┬───┴──┬────────────┐
+    │1│2│  D1  │   GUNSHI   │  ← Workers + Messenger + QC
+    └─┴─┴──┬───┴────────────┘
+  ASHIGARU DENREI  QC &
+    1-2      1   Model Router
+               │
+     ┌─────────┴──────────┐
+     ▼                    ▼
+┌──────────┐        ┌──────────┐
+│  SHINOBI │        │ KYAKUSHO │
+│ (Gemini) │        │ (Codex)  │
+└──────────┘        └──────────┘
+ Intelligence        Strategic
+ & Research           Advisor
 ```
 
 > Based on [Claude-Code-Communication](https://github.com/Akira-Papa/Claude-Code-Communication) by Akira-Papa, via [multi-agent-shogun](https://github.com/yohey-w/multi-agent-shogun) by yohey-w. Extensively redesigned with external agent integration (Gemini, Codex), deeper feudal hierarchy, context health management, hook-based security, and Agent Team support.
@@ -398,7 +399,7 @@ If you prefer to install dependencies manually:
 | Agent | Role | Count |
 |-------|------|-------|
 | 🏯 Shogun | Supreme commander — receives your orders | 1 |
-| 📋 Karo | Manager — distributes tasks, maintains dashboard | 1 (+1 standby) |
+| 📋 Karo | Manager — distributes tasks, maintains dashboard | 1 |
 | ⚔️ Ashigaru | Workers — execute implementation tasks in parallel | 2 |
 | 📨 Denrei | Messengers — summon and relay with external agents | 1 |
 | 🎯 Gunshi | Quality Controller — QC review, routes complex tasks to Opus | 1 |
@@ -828,7 +829,7 @@ SayTask handles personal productivity (capture → schedule → remind). The cmd
 | Agent | Role | Model | Count |
 |-------|------|-------|-------|
 | **Shogun (将軍)** | Commander — receives your orders, delegates to Karo | Opus | 1 |
-| **Karo (家老)** | Steward — breaks tasks down, assigns to Ashigaru, maintains dashboard | Opus | 1 (+1 standby) |
+| **Karo (家老)** | Steward — breaks tasks down, assigns to Ashigaru, maintains dashboard | Opus | 1 |
 | **Ashigaru (足軽)** | Foot soldiers — execute tasks in parallel | Sonnet/Opus | 2 |
 | **Denrei (伝令)** | Messengers — summon and relay with external agents | Haiku | 1 |
 | **Gunshi (軍師)** | Quality Controller — QC review of all Ashigaru output, routes L4+ tasks | Sonnet | 1 |
