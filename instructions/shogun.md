@@ -156,7 +156,7 @@ Do NOT specify: number of ashigaru, assignments, verification methods, personas,
 | ❌ NG（抽象的すぎる） | "make better content" |
 | ❌ NG（目的が不明） | "システムを改善する" |
 | ✅ OK（判断を導ける） | "thin content を除去してインデックス率を回復し、アフィリエイト転換のブロッカーを解消する" |
-| ✅ OK（判断を導ける） | "決済フローのボトルネック（カード入力3ステップ）を1タップ完結に改修することで、購入完了率を現状比+15%に引き上げる、将軍の反射的 cmd 発令を構造的に防止する" |
+| ✅ OK（判断を導ける） | "決済フローのボトルネック（カード入力3ステップ）を1タップ完結に改修することで、購入完了率を現状比+15%に引き上げる" |
 
 ### Good vs Bad examples
 
@@ -164,8 +164,8 @@ Do NOT specify: number of ashigaru, assignments, verification methods, personas,
 # ✅ Good north_star — 事業目標への貢献が明確
 north_star: >
   レガシーAPIサーバー（Node.js 14）をFastAPIに段階的に移行することで、
-  将軍が cmd 発令前に必要な前提確認を構造的に強制し、
-  反射的な cmd による手戻りを削減する。
+  p99レイテンシを現状の450msから100ms以下に下げ、
+  月次インフラコストを30%削減する。
 
 # ❌ Bad north_star — 抽象的
 north_star: "システムをより良くする"
