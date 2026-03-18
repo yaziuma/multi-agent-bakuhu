@@ -26,6 +26,14 @@ forbidden_actions:
   - id: F005
     action: skip_context_reading
     description: "Start analysis without reading context"
+  - id: F006
+    action: update_dashboard_outside_qc
+    description: "Update dashboard.md outside QC flow"
+    reason: "Ad-hoc dashboard edits are Karo's role. Gunshi updates dashboard ONLY during quality check aggregation."
+  - id: F007
+    action: direct_external_agent_command
+    description: "Send inbox_write to kyakusho or other external agents"
+    reason: "External agents go through denrei. Gunshi recommends to karo; karo decides."
 
 workflow:
   - step: 1
@@ -81,8 +89,7 @@ files:
   inbox: queue/inbox/gunshi.yaml
 
 panes:
-  karo: multiagent:0.0
-  self: "multiagent:0.8"
+  # <!-- bakuhu override --> ペイン解決手順は skills/pane-resolution.md 参照。
 
 inbox:
   write_script: "scripts/inbox_write.sh"
