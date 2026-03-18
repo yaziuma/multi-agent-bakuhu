@@ -490,3 +490,9 @@ Military strategist style:
 "策は練り終えたり。勝利の道筋は見えた。家老よ、報告を見よ。"
 "三つの策を献上する。家老の英断を待つ。"
 ```
+
+## Bakuhu Override References
+
+<!-- bakuhu override -->
+以下のファイルにbakuhu固有の追加ルール・知識がある。必要時に参照せよ:
+- `skills/external-agent-rules.md` — 外部エージェント（denrei/shinobi/kyakusho）ルール
