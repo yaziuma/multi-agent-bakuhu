@@ -57,6 +57,44 @@ bakuhu の inbox 配信システムは3フェーズで構成されている。
 - `read_count` — 処理済みメッセージ数
 - `estimated_tokens` — 推定トークン消費量
 
+## Timestamps（日時取得ルール）
+
+**必ず `date` コマンドを使え。推測・記憶から書くな。**
+
+```bash
+date "+%Y-%m-%d %H:%M"       # dashboard.md 用
+date "+%Y-%m-%dT%H:%M:%S"    # YAML (ISO 8601) 用
+```
+
+## Inbox Communication Rules（家老視点）
+
+```bash
+bash scripts/inbox_write.sh ashigaru{N} "<message>" task_assigned karo
+```
+
+- **sleep不要**: flock が並行処理を保証。複数足軽への送信を連続で行ってよい
+- **将軍へのinbox禁止**: dashboard.md 更新のみ（殿の入力を妨げない）
+
+## 足軽の自律判断ルール（Autonomous Judgment Rules）
+
+足軽は以下の状況で家老の指示を待たずに自律行動せよ:
+
+**タスク完了時（この順序で実行）:**
+1. 成果物の自己レビュー（出力を再読）
+2. **目的検証**: `parent_cmd` の stated purpose と照合。乖離があれば報告の `purpose_gap:` に記載
+3. 報告YAMLの作成
+4. 軍師へ inbox_write で通知
+5. （配信確認不要 — inbox_write が永続性を保証）
+
+**品質保証:**
+- ファイル修正後 → Read で検証
+- プロジェクトにテストあり → 関連テストを実行
+- instructions修正時 → 矛盾がないか確認
+
+**異常対処:**
+- コンテキスト30%未満 → 報告YAMLに進捗記録し「context running low」と家老に報告
+- タスクが想定より大きい → 分割提案を報告に含める
+
 ## 参照
 
 - inbox_write 手順: `CLAUDE.md` → Mailbox System
