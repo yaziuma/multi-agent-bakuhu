@@ -1,0 +1,129 @@
+# 外部エージェントルール
+
+<!-- bakuhu-specific: 客将・伝令・忍び・目付との連携ルール -->
+
+## 外部エージェント体系
+
+bakuhu には外部エージェントが存在し、伝令（denrei）経由で調整する。
+
+| エージェント | 種別 | 役割 |
+|-------------|------|------|
+| 客将（kyakusho） | 外部（Codex CLI経由） | 戦略参謀・アーキテクチャ設計 |
+| 忍び（shinobi） | 外部（Gemini CLI経由） | 諜報・調査・Web検索 |
+| 伝令（denrei） | 内部メッセンジャー | 外部エージェントへの連絡代行 |
+| 目付（metsuke） | 内部（Task tool） | UI検証専門（軍師が召喚可能） |
+
+## F006 / F007 ルール
+
+| Rule ID | 禁止行為 | 代替手段 |
+|---------|---------|---------|
+| F006 | 家老が直接外部エージェント（忍び/客将）を召喚する | 必ず伝令経由 |
+| F007 | 軍師が客将・忍び・伝令に inbox_write する | 軍師はレポートに「依頼推奨」と記載 → 家老が判断 |
+
+## 各エージェントの指示経路
+
+### 家老（Karo）視点
+
+```
+家老 → 伝令タスクYAML → 伝令 → 忍び/客将
+                                   ↓（結果）
+                              伝令報告YAML
+                                   ↓
+                            家老が結果を受け取る
+```
+
+**絶対禁止（F006）**: 家老が `gemini` コマンドや `codex` コマンドを直接実行すること。
+
+### 軍師（Gunshi）視点
+
+```
+軍師 → QCレポートに「客将/忍び依頼推奨: {理由}」と記載
+  ↓
+家老が判断 → 必要なら伝令経由で外部エージェントを召喚
+```
+
+**絶対禁止（F007）**: 軍師が客将・忍び・伝令に直接 inbox_write すること。
+
+### 目付（Metsuke）の例外
+
+目付は外部エージェントではなく内部の Task tool エージェント。軍師が直接召喚可能。
+
+```
+軍師 → Task tool で目付を召喚（UIを含むQCタスクの場合）
+  ↓
+目付がブラウザ検証を実施
+  ↓
+軍師がQC最終判定に統合
+```
+
+## 忍びの能力テーブル
+
+| 能力 | 説明 |
+|------|------|
+| Web検索 | Google Search統合で最新情報取得 |
+| 大規模分析 | 1Mトークンコンテキストでコードベース全体を分析 |
+| マルチモーダル | PDF/動画/音声の内容抽出 |
+
+**いつ使うか**: 最新ドキュメント調査、ライブラリ比較・選定、大規模コード理解、PDF/動画/音声の内容抽出。
+
+## 足軽への忍び召喚許可（家老が制御）
+
+高難度タスクで調査が必要な場合、家老は足軽に忍び召喚を許可できる。
+
+```yaml
+task:
+  task_id: subtask_xxx
+  shinobi_allowed: true   # 忍び召喚許可
+  shinobi_budget: 3       # 最大召喚回数
+```
+
+**注意**: 足軽が許可なく忍びを召喚することは禁止。タスクYAMLで明示的に許可が必要。
+
+## 軍師の禁止事項（bakuhu固有）
+
+### F006: QCフロー外のdashboard更新禁止
+
+軍師はQCフロー外で `dashboard.md` を更新することは禁止。
+
+```yaml
+# gunshi.md forbidden_actions より
+- id: F006
+  action: update_dashboard_outside_qc
+  description: "Update dashboard.md outside QC flow"
+  reason: "Ad-hoc dashboard edits are Karo's role. Gunshi updates dashboard ONLY during quality check aggregation."
+```
+
+**軍師がdashboardを更新できる唯一の場面**: QCフロー中のQC結果セクション更新のみ。
+それ以外のdashboard更新は全て家老の責任。
+
+### F007: 外部エージェントへの直接inbox_write禁止
+
+軍師は客将（kyakusho）や他の外部エージェントに直接 inbox_write することは禁止。
+
+```yaml
+# gunshi.md forbidden_actions より
+- id: F007
+  action: direct_external_agent_command
+  description: "Send inbox_write to kyakusho (客将) or other external agents"
+  reason: "External agents go through denrei (伝令). Gunshi recommends to karo; karo decides."
+```
+
+軍師が外部調査を必要と判断した場合:
+```
+軍師 → QCレポートに「客将/忍び依頼推奨: {理由}」と記載
+  ↓
+家老が判断 → 必要なら伝令経由で外部エージェントを召喚
+```
+
+## External Agent Summoning（CLAUDE.md より）
+
+**Rule**: 忍び（Gemini）と客将（Codex）へのリクエストは必ず伝令（denrei）経由:
+- 忍び/客将を直接召喚しない
+- 家老が伝令タスクを作成 → 伝令が実行 → 報告を返す
+- 詳細: `instructions/denrei.md`, `instructions/shinobi.md`, `instructions/kyakusho.md`
+
+## 参照
+
+- 伝令プロトコル: `skills/denrei-protocol.md`
+- 客将プロトコル: `skills/kyakusho-protocol.md`
+- 忍び召喚（足軽視点）: `skills/shinobi-summon.md`
