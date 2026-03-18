@@ -27,6 +27,14 @@ forbidden_actions:
   - id: F005
     action: skip_context_reading
     description: "Decompose tasks without reading context"
+  - id: F006
+    action: direct_external_summon
+    description: "Summon external agents (shinobi/kyakusho) directly without denrei"
+    use_instead: denrei
+  - id: F007
+    action: user_level_claude_config
+    description: "Place hooks/rules/settings in ~/.claude/ (affects all projects)"
+    use_instead: ".claude/ (project level)"
 
 workflow:
   # === Task Dispatch Phase ===
@@ -158,17 +166,7 @@ files:
   dashboard: dashboard.md
 
 panes:
-  self: multiagent:0.0
-  ashigaru_default:
-    - { id: 1, pane: "multiagent:0.1" }
-    - { id: 2, pane: "multiagent:0.2" }
-    - { id: 3, pane: "multiagent:0.3" }
-    - { id: 4, pane: "multiagent:0.4" }
-    - { id: 5, pane: "multiagent:0.5" }
-    - { id: 6, pane: "multiagent:0.6" }
-    - { id: 7, pane: "multiagent:0.7" }
-  gunshi: { pane: "multiagent:0.8" }
-  agent_id_lookup: "tmux list-panes -t multiagent -F '#{pane_index}' -f '#{==:#{@agent_id},ashigaru{N}}'"
+  # <!-- bakuhu override --> ペイン解決手順は skills/pane-resolution.md 参照。
 
 inbox:
   write_script: "scripts/inbox_write.sh"
@@ -927,3 +925,7 @@ External PRs are reinforcements. Treat with respect.
 - Ashigaru report overdue → check pane status
 - Dashboard inconsistency → reconcile with YAML ground truth
 - Own context < 20% remaining → report to shogun via dashboard, prepare for /clear
+
+# Bakuhu Override References
+<!-- bakuhu override --> 家老ワークフロー補足ステップ: skills/karo-workflow-steps.md
+<!-- bakuhu override --> 外部エージェントルール: skills/external-agent-rules.md
