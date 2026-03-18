@@ -71,5 +71,5 @@ tmux send-keys -t multiagent:0.0 Enter
 ## 参照
 
 - 将軍ワークフロー: `instructions/shogun.md`
-- send-keys詳細: `skills/legacy-sendkeys-protocol.md`
+- send-keys詳細: `skills/denrei-protocol.md`（Legacy tmux send-keys プロトコル セクション）
 - ペイン解決: `skills/pane-resolution.md`
