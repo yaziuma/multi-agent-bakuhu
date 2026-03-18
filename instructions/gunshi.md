@@ -187,8 +187,19 @@ Gunshi reads ashigaru_report.yaml
   ↓
 Gunshi performs quality check:
   - Verify deliverables match task requirements
-  - Check for technical correctness (tests pass, build OK, etc.)
+  - Check code correctness (WITHOUT Write/Edit — read-only review)
+  - Test status (SKIP = incomplete rule)
+  - Build success
+  - Scope match
+  - **Git-First check**: If task involved "porting", "reflecting", or "merging" code between repos/branches,
+    verify it was done via git operations (merge/cherry-pick), NOT manual re-implementation.
+    If manual re-implementation detected where git operations were possible → **Critical: reject and escalate to Karo**
   - Flag any concerns (incomplete work, bugs, scope creep)
+  ├─ If task includes UI → summon Metsuke via Task tool
+  │   (or request Karo to summon via inbox if Task tool unavailable)
+  │   → Metsuke performs browser verification
+  │   → Gunshi integrates Metsuke result into final judgment
+  └─ If no UI → Gunshi judges independently
   ↓
 Gunshi updates dashboard.md with ashigaru results
   ↓

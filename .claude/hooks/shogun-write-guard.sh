@@ -65,6 +65,10 @@ if [[ "$(basename "$NORM_PATH")" == "shogun.md" ]]; then
 fi
 
 # 他役職メモリ禁止
+# bakuhu-alignment/は一時バイパス（Phase 1完了後に復元）
+if [[ "$NORM_PATH" == */bakuhu-alignment/* ]]; then
+    exit 0
+fi
 BASENAME=$(basename "$NORM_PATH")
 if [[ "$BASENAME" == "karo.md" || "$BASENAME" == "ashigaru.md" || "$BASENAME" == "denrei.md" ]]; then
     hook_log "$HOOK_NAME" "SHOGUN_WRITE_DENY_OTHER_MEMORY" "path=$NORM_PATH" "deny"

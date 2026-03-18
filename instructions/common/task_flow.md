@@ -109,7 +109,6 @@ Note:
 - `processed`: processed; keep record
   - Allowed: read-only
   - Forbidden: flipping back to pending without creating a new entry
-
 ## Immediate Delegation Principle (Shogun)
 
 **Delegate to Karo immediately and end your turn** so the Lord can input next command.
@@ -181,6 +180,26 @@ Cross-reference with dashboard.md — process any reports not yet reflected.
   cmd_008 dispatch → sleep 30 → capture-pane → check status → sleep 30 ...
 ```
 
+## Git-First Principle（コード反映時の鉄則）
+
+**「反映」「ポート」「マージ」「v1にも入れろ」等の指示 → 第一選択は必ずgit操作。手動再実装は絶対禁止。**
+
+| 指示の種類 | 正しい対応 | 禁止 |
+|-----------|-----------|------|
+| 別リポジトリ/ブランチのコードを反映 | `git merge`, `git cherry-pick`, `git remote add` + merge | 手動でコードを書き直す |
+| コードベースの置き換え | `git merge -X theirs`, ブランチ切り替え | ファイル単位のcp/コピー |
+| 特定コミットの取り込み | `git cherry-pick <hash>` | diffを見て手で再実装 |
+
+### 各層の責任
+
+| 層 | チェック義務 |
+|----|------------|
+| **家老（Karo）** | 手動再実装の指示が来たら**STOP**。将軍に「gitマージではなく手動再実装で間違いないか？」と確認 |
+| **足軽（Ashigaru）** | 既存コードの手動コピー実装を指示された場合、家老に「git操作で対応可能では？」と確認 |
+| **将軍（Shogun）** | 「ポート」指示時にgit操作方法を明記する |
+| **軍師（Gunshi）** | QC時、既存コードの手動再実装が行われていないか確認する。gitマージで対応可能な作業が手動実装されていた場合は**Criticalとして差し戻す** |
+
+**背景**: cmd_522で将軍の指示ミス→家老がそのまま通した→足軽が手動再実装→リバート。3層全てにチェック機能がなかったことが原因。
 ## Timestamps
 
 **Always use `date` command.** Never guess.
