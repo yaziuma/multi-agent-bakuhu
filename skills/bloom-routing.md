@@ -49,6 +49,65 @@ task:
     ...
 ```
 
+## Eat the Frog 連携
+
+**Frog = 最難タスク**。cmd受信・分解後に bloom L5-L6 の最難 subtask を `today.frog` に設定し優先割当する。
+
+- **設定タイミング**: cmd受信後の分解時。1日1件のみ（既設定なら上書き禁止）
+- **優先度**: Frog タスクを最初に割り当てる
+- **完了時**: 🐸通知 → `today.frog` を `""` にリセット
+
+## Opus 必須基準（OC）テーブル
+
+**デフォルトは足軽1-4（Sonnet）。以下の OC に2件以上該当する場合のみ足軽5-8（Opus）を使用。**
+
+| OC | 基準 | 例 |
+|----|------|-----|
+| OC1 | 複雑なアーキテクチャ/システム設計 | 新規モジュール設計、通信プロトコル設計 |
+| OC2 | 多ファイルリファクタリング（5+ファイル） | システム全体の構造変更 |
+| OC3 | 高度な分析・戦略立案 | 技術選定の比較分析、コスト試算 |
+| OC4 | 創造的・探索的タスク | 新機能のアイデア出し、設計提案 |
+| OC5 | 長文の高品質ドキュメント | README全面改訂、設計書作成 |
+| OC6 | 困難なデバッグ調査 | 再現困難なバグ、マルチスレッド問題 |
+| OC7 | セキュリティ関連実装・レビュー | 認証、暗号化、脆弱性対応 |
+
+**判断に迷う場合（OC 1件のみ）**: まず Sonnet 足軽に投入。品質不足なら Opus 足軽に再投入。
+
+## 動的切替の原則
+
+| 足軽 | デフォルト | 切替方向 | 切替条件 |
+|------|-----------|---------|---------|
+| 足軽1-4 | Sonnet Thinking | → Opus に**昇格** | OC基準2件+ かつ Opus足軽が全て使用中 |
+| 足軽5-8 | Opus Thinking | → Sonnet に**降格** | OC基準に2件以上該当しない軽タスク |
+
+**重要**: 足軽5-8に軽タスクを振る際は必ず Sonnet に降格してから割り当てよ。
+
+## `/model` コマンドによる切替手順（3ステップ）
+
+```bash
+# Step 1: モデル切替コマンドを送信
+tmux send-keys -t multiagent:0.{N} '/model <新モデル>'
+# Step 2: Enter を送信
+tmux send-keys -t multiagent:0.{N} Enter
+# Step 3: tmux ボーダー表示を更新
+tmux set-option -p -t multiagent:0.{N} @model_name '<新表示名>'
+```
+
+**表示名対応テーブル:**
+
+| `/model` 引数 | `@model_name` 表示名 |
+|---------------|---------------------|
+| `opus` | `Opus Thinking` |
+| `sonnet` | `Sonnet Thinking` |
+
+**例（足軽{N}をSonnetに降格）:**
+```bash
+ASHIGARU_PANE=$(grep ': ashigaru{N}' config/pane_role_map.yaml | awk '{print $1}' | tr -d ':')
+tmux send-keys -t "$ASHIGARU_PANE" '/model sonnet'
+tmux send-keys -t "$ASHIGARU_PANE" Enter
+tmux set-option -p -t "$ASHIGARU_PANE" @model_name 'Sonnet Thinking'
+```
+
 ## 参照
 
 - 軍師ディスパッチ手順: `instructions/karo.md` → Gunshi Dispatch Procedure
