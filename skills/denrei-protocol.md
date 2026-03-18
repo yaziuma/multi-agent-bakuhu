@@ -56,6 +56,63 @@ STEP 4: 伝令が報告
 - `queue/denrei/reports/denrei{N}_report.yaml` — 伝令報告
 - `instructions/denrei.md` — 伝令自身の指示書
 
+## ファイルパス定義
+
+伝令・忍び・客将に関するファイルパス（CLAUDE.md frontmatter より）:
+
+```yaml
+denrei_tasks:    "queue/denrei/tasks/denrei{N}.yaml"      # 伝令タスク
+denrei_reports:  "queue/denrei/reports/denrei{N}_report.yaml"  # 伝令報告
+shinobi_reports: "queue/shinobi/reports/"                  # 忍び（Gemini）調査報告
+kyakusho_reports: "queue/kyakusho/reports/"                # 客将（Codex）戦略報告
+```
+
+## Legacy tmux send-keys プロトコル（伝令/忍び向け）
+
+**適用範囲**: 伝令・忍び連携専用。通常のエージェント間通信は inbox_write.sh を使え。
+
+### 2回分離送信ルール（必須）
+
+send-keys は必ず **2回の独立したBash呼び出し** に分離せよ:
+
+```bash
+# Bash呼び出し 1: メッセージ送信
+tmux send-keys -t multiagent:0.{PANE} 'メッセージ内容'
+
+# Bash呼び出し 2: Enter送信（別の呼び出し）
+tmux send-keys -t multiagent:0.{PANE} Enter
+```
+
+1回の呼び出しでメッセージとEnterを送ることは禁止。
+（paneの状態によってEnterが欠落するリスクがある）
+
+### ポーリング禁止
+
+send-keysを使ったポーリングループは **APIコスト観点から絶対禁止**。
+
+```
+❌ 禁止: cmd dispatch → sleep 30 → capture-pane → check → sleep 30 → ...
+✅ 正しいパターン: cmd dispatch → inbox_write → stop (await response)
+```
+
+### エスカレーション（nudgeが処理されない場合）
+
+| 経過時間 | アクション | トリガー |
+|---------|-----------|---------|
+| 0〜2 min | 標準 pty nudge | 通常配信 |
+| 2〜4 min | Escape×2 + nudge | カーソル位置バグ回避 |
+| 4 min+ | `/clear` 送信（5分に1回まで） | 強制セッションリセット + YAML再読 |
+
+### 報告フロー（割り込み防止）
+
+| 方向 | 方法 | 制約 |
+|------|------|------|
+| 足軽 → 家老 | 報告YAML + inbox_write | — |
+| 家老 → 将軍/殿 | dashboard.md更新のみ | **将軍へのinbox送信は禁止** |
+| 上位 → 下位 | YAML + inbox_write | — |
+
+**将軍へのinbox送信が禁止の理由**: 殿の入力を妨げないため。
+
 ## 参照
 
 - 客将召喚プロトコル: `skills/kyakusho-protocol.md`

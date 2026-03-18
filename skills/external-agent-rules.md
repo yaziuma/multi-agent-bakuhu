@@ -79,6 +79,49 @@ task:
 
 **注意**: 足軽が許可なく忍びを召喚することは禁止。タスクYAMLで明示的に許可が必要。
 
+## 軍師の禁止事項（bakuhu固有）
+
+### F006: QCフロー外のdashboard更新禁止
+
+軍師はQCフロー外で `dashboard.md` を更新することは禁止。
+
+```yaml
+# gunshi.md forbidden_actions より
+- id: F006
+  action: update_dashboard_outside_qc
+  description: "Update dashboard.md outside QC flow"
+  reason: "Ad-hoc dashboard edits are Karo's role. Gunshi updates dashboard ONLY during quality check aggregation."
+```
+
+**軍師がdashboardを更新できる唯一の場面**: QCフロー中のQC結果セクション更新のみ。
+それ以外のdashboard更新は全て家老の責任。
+
+### F007: 外部エージェントへの直接inbox_write禁止
+
+軍師は客将（kyakusho）や他の外部エージェントに直接 inbox_write することは禁止。
+
+```yaml
+# gunshi.md forbidden_actions より
+- id: F007
+  action: direct_external_agent_command
+  description: "Send inbox_write to kyakusho (客将) or other external agents"
+  reason: "External agents go through denrei (伝令). Gunshi recommends to karo; karo decides."
+```
+
+軍師が外部調査を必要と判断した場合:
+```
+軍師 → QCレポートに「客将/忍び依頼推奨: {理由}」と記載
+  ↓
+家老が判断 → 必要なら伝令経由で外部エージェントを召喚
+```
+
+## External Agent Summoning（CLAUDE.md より）
+
+**Rule**: 忍び（Gemini）と客将（Codex）へのリクエストは必ず伝令（denrei）経由:
+- 忍び/客将を直接召喚しない
+- 家老が伝令タスクを作成 → 伝令が実行 → 報告を返す
+- 詳細: `instructions/denrei.md`, `instructions/shinobi.md`, `instructions/kyakusho.md`
+
 ## 参照
 
 - 伝令プロトコル: `skills/denrei-protocol.md`
