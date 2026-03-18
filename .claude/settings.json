@@ -1,4 +1,17 @@
 {
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash scripts/stop_hook_inbox.sh",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  },
   "permissions": {
     "deny": [
       "Bash(rm -rf /)",
@@ -21,66 +34,6 @@
       "Bash(dd if=*)",
       "Bash(chmod -R * /)",
       "Bash(chown -R * /)"
-    ]
-  },
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .claude/hooks/shogun-guard.sh"
-          }
-        ]
-      },
-      {
-        "matcher": "Write|Edit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .claude/hooks/shogun-write-guard.sh"
-          }
-        ]
-      },
-      {
-        "matcher": "Write|Edit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .claude/hooks/gitignore-guardian-write.sh"
-          }
-        ]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .claude/hooks/gitignore-guardian-bash.sh"
-          }
-        ]
-      },
-      {
-        "matcher": "Task",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .claude/hooks/shogun-task-guard.sh"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash scripts/stop_hook_inbox.sh"
-          }
-        ]
-      }
     ]
   },
   "spinnerVerbs": {
@@ -193,7 +146,7 @@
       "殿の二択の三つ目",
       "逆参勤交代",
       "合戦場が満席",
-      "客将の方向音痴",
+      "軍師の方向音痴",
       "忍者の名刺",
       "合戦の雨天中止",
       "降伏が先着順",

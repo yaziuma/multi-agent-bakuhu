@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
 # Keep inbox watchers alive in a persistent tmux-hosted shell.
@@ -16,61 +16,40 @@ ensure_inbox_file() {
     fi
 }
 
-agent_exists() {
-    local agent="$1"
-    # Check if agent pane exists by @agent_id (dynamic resolution)
-    local pane
-    for pane in $(tmux list-panes -a -F '#{pane_id}' 2>/dev/null); do
-        local aid
-        aid=$(tmux display-message -t "$pane" -p '#{@agent_id}' 2>/dev/null || true)
-        if [ "$aid" = "$agent" ]; then
-            return 0
-        fi
-    done
-    return 1
+pane_exists() {
+    local pane="$1"
+    tmux list-panes -a -F "#{session_name}:#{window_name}.#{pane_index}" 2>/dev/null | grep -qx "$pane"
 }
 
 start_watcher_if_missing() {
     local agent="$1"
-    local log_file="$2"
+    local pane="$2"
+    local log_file="$3"
+    local cli
 
     ensure_inbox_file "$agent"
-    if ! agent_exists "$agent"; then
+    if ! pane_exists "$pane"; then
         return 0
     fi
 
-    if pgrep -f "scripts/inbox_watcher.sh ${agent}" >/dev/null 2>&1; then
+    if pgrep -f "scripts/inbox_watcher.sh ${agent} " >/dev/null 2>&1; then
         return 0
     fi
 
-    # Let inbox_watcher.sh resolve pane and cli dynamically
-    nohup bash scripts/inbox_watcher.sh "$agent" >> "$log_file" 2>&1 &
+    cli=$(tmux show-options -p -t "$pane" -v @agent_cli 2>/dev/null || echo "codex")
+    nohup bash scripts/inbox_watcher.sh "$agent" "$pane" "$cli" >> "$log_file" 2>&1 &
 }
 
-# Read config once before the loop (no hot-reload needed)
-ASHIGARU_COUNT=$(grep 'ashigaru_count:' config/settings.yaml 2>/dev/null | awk '{print $2}' || true)
-DENREI_COUNT=$(grep 'max_count:' config/settings.yaml 2>/dev/null | awk '{print $2}' || true)
-
-# Fallback if config read fails
-ASHIGARU_COUNT=${ASHIGARU_COUNT:-2}
-DENREI_COUNT=${DENREI_COUNT:-1}
-
-# Numeric validation (guard against non-integer values in config)
-if ! [[ "$ASHIGARU_COUNT" =~ ^[0-9]+$ ]]; then
-    ASHIGARU_COUNT=2
-fi
-if ! [[ "$DENREI_COUNT" =~ ^[0-9]+$ ]]; then
-    DENREI_COUNT=1
-fi
-
 while true; do
-    start_watcher_if_missing "shogun" "logs/inbox_watcher_shogun.log"
-    start_watcher_if_missing "karo" "logs/inbox_watcher_karo.log"
-    for i in $(seq 1 "$ASHIGARU_COUNT"); do
-        start_watcher_if_missing "ashigaru${i}" "logs/inbox_watcher_ashigaru${i}.log"
-    done
-    for i in $(seq 1 "$DENREI_COUNT"); do
-        start_watcher_if_missing "denrei${i}" "logs/inbox_watcher_denrei${i}.log"
-    done
+    start_watcher_if_missing "shogun" "shogun:main.0" "logs/inbox_watcher_shogun.log"
+    start_watcher_if_missing "karo" "multiagent:agents.0" "logs/inbox_watcher_karo.log"
+    start_watcher_if_missing "ashigaru1" "multiagent:agents.1" "logs/inbox_watcher_ashigaru1.log"
+    start_watcher_if_missing "ashigaru2" "multiagent:agents.2" "logs/inbox_watcher_ashigaru2.log"
+    start_watcher_if_missing "ashigaru3" "multiagent:agents.3" "logs/inbox_watcher_ashigaru3.log"
+    start_watcher_if_missing "ashigaru4" "multiagent:agents.4" "logs/inbox_watcher_ashigaru4.log"
+    start_watcher_if_missing "ashigaru5" "multiagent:agents.5" "logs/inbox_watcher_ashigaru5.log"
+    start_watcher_if_missing "ashigaru6" "multiagent:agents.6" "logs/inbox_watcher_ashigaru6.log"
+    start_watcher_if_missing "ashigaru7" "multiagent:agents.7" "logs/inbox_watcher_ashigaru7.log"
+    start_watcher_if_missing "gunshi" "multiagent:agents.8" "logs/inbox_watcher_gunshi.log"
     sleep 5
 done

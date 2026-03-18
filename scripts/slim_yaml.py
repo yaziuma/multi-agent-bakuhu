@@ -7,6 +7,7 @@ Removes completed/archived items from YAML queue files to maintain performance.
 - For all agents: Archives read: true messages from inbox files.
 """
 
+import os
 import sys
 import time
 from datetime import datetime
@@ -14,30 +15,9 @@ from pathlib import Path
 
 import yaml
 
+CANONICAL_TASKS = {f'ashigaru{i}' for i in range(1, 9)} | {'gunshi'}
+CANONICAL_REPORTS = {f'ashigaru{i}_report' for i in range(1, 9)} | {'gunshi_report'}
 IDLE_STUB = {'task': {'status': 'idle'}}
-
-def _detect_canonical_agents(queue_dir):
-    """queue/tasks/ と queue/inbox/ を走査して既存エージェント名を自動検出"""
-    agents = set()
-    tasks_dir = queue_dir / "tasks"
-    if tasks_dir.exists():
-        for f in tasks_dir.glob("*.yaml"):
-            agents.add(f.stem)
-    inbox_dir = queue_dir / "inbox"
-    if inbox_dir.exists():
-        for f in inbox_dir.glob("*.yaml"):
-            agents.add(f.stem)
-    return agents
-
-
-def get_canonical_tasks(queue_dir):
-    return _detect_canonical_agents(queue_dir)
-
-
-def get_canonical_reports(queue_dir):
-    return {f"{a}_report" for a in _detect_canonical_agents(queue_dir)}
-
-
 
 
 def load_yaml(filepath):
@@ -124,7 +104,6 @@ def slim_tasks(dry_run=False):
 
     timestamp = get_timestamp()
     done_statuses = {'done', 'completed', 'cancelled'}
-    canonical_tasks = get_canonical_tasks(queue_dir)
 
     for filepath in sorted(tasks_dir.glob('*.yaml')):
         data = load_yaml(filepath)
@@ -136,11 +115,12 @@ def slim_tasks(dry_run=False):
         if not status:
             continue
 
-        if filepath.stem in canonical_tasks:
+        stem = filepath.stem
+        if stem in CANONICAL_TASKS:
             if status not in done_statuses:
                 continue
 
-            archive_path = archive_dir / f'{filepath.stem}_{timestamp}.yaml'
+            archive_path = archive_dir / f'{stem}_{timestamp}.yaml'
             if not archive_taskspec(filepath, archive_path, data, dry_run=dry_run):
                 return False
 
@@ -180,10 +160,9 @@ def slim_reports(dry_run=False):
 
     active_cmd_ids = get_active_cmd_ids()
     timestamp = get_timestamp()
-    canonical_reports = get_canonical_reports(queue_dir)
 
     for filepath in sorted(reports_dir.glob('*.yaml')):
-        if filepath.stem in canonical_reports:
+        if filepath.stem in CANONICAL_REPORTS:
             continue
 
         data = load_yaml(filepath)
@@ -269,7 +248,7 @@ def slim_inbox(agent_id, dry_run=False):
     return True
 
 
-def slim_shugun_to_karo(dry_run=False):
+def slim_shugun_to_karo():
     """Archive done/cancelled commands from shogun_to_karo.yaml."""
     queue_dir = get_queue_dir()
     archive_dir = queue_dir / 'archive'
@@ -303,10 +282,6 @@ def slim_shugun_to_karo(dry_run=False):
 
     # If nothing to archive, return success without writing
     if not archived:
-        return True
-
-    if dry_run:
-        print(f"[DRY-RUN] would archive {len(archived)} commands from shogun_to_karo.yaml")
         return True
 
     # Write archived commands to timestamped file
@@ -393,7 +368,7 @@ def main():
 
     # Process shogun_to_karo if this is Karo
     if agent_id == 'karo':
-        if not slim_shugun_to_karo(dry_run=dry_run):
+        if not slim_shugun_to_karo():
             sys.exit(1)
         migration(dry_run)
         if not slim_tasks(dry_run):
