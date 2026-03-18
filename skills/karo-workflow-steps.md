@@ -83,4 +83,4 @@ step 8（dispatch後）と同じcheck_pendingロジックだが、report recepti
 - 家老ワークフロー全体: `instructions/karo.md`
 - ペイン番号解決: `skills/pane-resolution.md`
 - 外部エージェントルール: `skills/external-agent-rules.md`
-- send-keysプロトコル: `skills/legacy-sendkeys-protocol.md`
+- send-keysプロトコル: `skills/denrei-protocol.md`（Legacy tmux send-keys プロトコル セクション）
