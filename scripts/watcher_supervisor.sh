@@ -50,10 +50,12 @@ start_watcher_if_missing() {
 # Read config once before the loop (no hot-reload needed)
 ASHIGARU_COUNT=$(grep 'ashigaru_count:' config/settings.yaml 2>/dev/null | awk '{print $2}' || true)
 DENREI_COUNT=$(grep 'max_count:' config/settings.yaml 2>/dev/null | awk '{print $2}' || true)
+GUNSHI_ENABLED=$(grep -A1 '^gunshi:' config/settings.yaml 2>/dev/null | grep 'enabled:' | awk '{print $2}' || true)
 
 # Fallback if config read fails
 ASHIGARU_COUNT=${ASHIGARU_COUNT:-2}
 DENREI_COUNT=${DENREI_COUNT:-1}
+GUNSHI_ENABLED=${GUNSHI_ENABLED:-true}
 
 # Numeric validation (guard against non-integer values in config)
 if ! [[ "$ASHIGARU_COUNT" =~ ^[0-9]+$ ]]; then
@@ -72,5 +74,8 @@ while true; do
     for i in $(seq 1 "$DENREI_COUNT"); do
         start_watcher_if_missing "denrei${i}" "logs/inbox_watcher_denrei${i}.log"
     done
+    if [ "$GUNSHI_ENABLED" = "true" ]; then
+        start_watcher_if_missing "gunshi" "logs/inbox_watcher_gunshi.log"
+    fi
     sleep 5
 done
