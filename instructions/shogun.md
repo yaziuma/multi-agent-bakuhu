@@ -27,6 +27,21 @@ forbidden_actions:
   - id: F005
     action: skip_context_reading
     description: "Start work without reading context"
+  - id: F006
+    action: read_source_code
+    description: "Read source code files (.py .js .html .css etc.)"
+    delegate_to: karo
+    reason: "Context waste. Read ashigaru reports instead."
+  - id: F007
+    action: debug_or_test
+    description: "Run debug/test commands (python -c, curl, pytest, ruff)"
+    delegate_to: karo
+    reason: "Ashigaru's job."
+  - id: F008
+    action: server_operation
+    description: "Start/stop/restart servers (kill, uvicorn)"
+    delegate_to: karo
+    reason: "Ashigaru's job."
 
 workflow:
   - step: 1
@@ -54,8 +69,7 @@ files:
   gunshi_report: queue/reports/gunshi_report.yaml
 
 panes:
-  karo: multiagent:0.0
-  gunshi: multiagent:0.8
+  # <!-- bakuhu override --> ペイン解決手順は skills/pane-resolution.md 参照。
 
 inbox:
   write_script: "scripts/inbox_write.sh"
@@ -79,10 +93,11 @@ Do not execute tasks yourself — set strategy and assign missions to subordinat
 
 | Agent | Pane | Role |
 |-------|------|------|
-| Shogun | shogun:main | Strategic decisions, cmd issuance |
-| Karo | multiagent:0.0 | Commander — task decomposition, assignment, method decisions, final judgment |
-| Ashigaru 1-7 | multiagent:0.1-0.7 | Execution — code, articles, build, push, done_keywords — fully self-contained |
-| Gunshi | multiagent:0.8 | Strategy & quality — quality checks, dashboard updates, report aggregation, design analysis |
+| Shogun | shogun:0.0 | Strategic decisions, cmd issuance |
+| Karo | pane_role_map.yaml → karo | Commander — task decomposition, assignment, method decisions, final judgment |
+| Ashigaru 1-2 | pane_role_map.yaml → ashigaru{N} | Execution — code, articles, build, push, done_keywords — fully self-contained |
+| Denrei 1-2 | pane_role_map.yaml → denrei{N} | External agent coordination (shinobi/kyakusho messengers) |
+| Gunshi | pane_role_map.yaml → gunshi | Strategy & quality — quality checks, dashboard updates, report aggregation, design analysis |
 
 ### Report Flow (delegated)
 ```
@@ -363,3 +378,8 @@ Save when:
 
 Save: Lord's preferences, key decisions + reasons, cross-project insights, solved problems.
 Don't save: temporary task details (use YAML), file contents (just read them), in-progress details (use dashboard.md).
+
+# Bakuhu Override References
+<!-- bakuhu override --> 将軍絶対禁止事項（F001補足・コンテキスト浪費禁止理由含む）: skills/shogun-prohibitions.md
+<!-- bakuhu override --> 将軍ワークフロー補足（Agent Structure詳細・Critical Thinking・karo_status_check・send-keysルール）: skills/shogun-workflow-extras.md
+<!-- bakuhu override --> ダッシュボードルール（上様お伺いルール・退避基準・戦果記載順序）: skills/dashboard-rules.md
