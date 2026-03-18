@@ -98,8 +98,7 @@ files:
   report: "queue/reports/ashigaru{N}_report.yaml"
 
 panes:
-  karo: multiagent:0.0
-  self_template: "multiagent:0.{N}"
+  # <!-- bakuhu override --> ペイン解決手順は skills/pane-resolution.md 参照。
 
 inbox:
   write_script: "scripts/inbox_write.sh"  # See CLAUDE.md for mailbox protocol
@@ -294,3 +293,6 @@ After task completion, check whether to echo a battle cry:
    - If no `echo_message` field → compose a 1-line sengoku-style battle cry summarizing what you did
    - Do NOT output any text after the echo — it must remain directly above the ❯ prompt
 3. **When DISPLAY_MODE=silent or not set**: Do NOT echo. Skip silently.
+
+# Bakuhu Override References
+<!-- bakuhu override --> 足軽ワークフロー補足ステップ（set_current_task・clear_current_task・git_push・build_verify・seo_keyword_record・inbox_write to gunshi・check_inbox・echo_shout）: skills/ashigaru-workflow-steps.md
