@@ -836,9 +836,11 @@ SayTask handles personal productivity (capture → schedule → remind). The cmd
 | **Shinobi (忍び)** | Intelligence — research, web search, large document analysis | Gemini | External |
 | **Kyakusho (客将)** | Strategist — deep reasoning, code review, design decisions | Codex | External |
 
-### Agent Team (Claude Code Sub-agents)
+### Agent Team (Claude Code Sub-agents / Agent SDK)
 
 Separate from the tmux hierarchy, Bakuhu uses **Claude Code's native Agent Team feature** for complex development tasks requiring orchestration. These agents run as sub-processes within Claude Code, not as tmux panes.
+
+Agent definitions live in `agents/default/` (following the Claude Agent SDK structure — `agent.yaml` + `system.md`, ported from upstream [multi-agent-shogun](https://github.com/yohey-w/multi-agent-shogun)) and can be extended to support additional Agent SDK-compatible runtimes.
 
 | Agent | Role | Model | Tools |
 |-------|------|-------|-------|
@@ -1052,11 +1054,41 @@ No skills are included out of the box. Skills emerge organically during operatio
 
 Invoke skills with `/skill-name`. Just tell the Shogun: "run /skill-name".
 
+### Skill System
+
+The `skills/` directory contains a growing library of modular knowledge files that agents load on demand. These are **reference documents, not slash commands** — agents read them to gain domain expertise.
+
+**Built-in skill files include:**
+
+| Skill File | Purpose |
+|-----------|---------|
+| `bloom-routing.md` | Bloom Taxonomy L1–L6 model routing rules |
+| `context-health.md` | /compact templates, mixed strategies |
+| `identity-management.md` | Identity isolation design, tmux pane resolution |
+| `shinobi-manual.md` | Shinobi (Gemini) capabilities and summon protocol |
+| `spec-before-action.md` | Spec-first principle (all agents must read) |
+| `bugyo-workflow.md` | Agent Team (Bugyo) orchestration workflow |
+| `karo-workflow-steps.md` | Karo step-by-step workflow reference |
+| `ashigaru-workflow-steps.md` | Ashigaru detailed workflow steps |
+| `external-agent-rules.md` | External agent (Shinobi/Kyakusho) summon rules |
+| `skill-candidate-flow.md` | How to propose and promote new skills |
+
+**Shogun convenience skills** (structured directories in `skills/`, ported from upstream [multi-agent-shogun](https://github.com/yohey-w/multi-agent-shogun)):
+
+| Skill | What it does |
+|-------|-------------|
+| `shogun-agent-status/` | Check all agent status from one command |
+| `shogun-bloom-config/` | Configure Bloom routing settings |
+| `shogun-model-list/` | List available models per agent |
+| `shogun-model-switch/` | Switch agent model mid-operation |
+| `shogun-readme-sync/` | Sync README with latest changes |
+| `shogun-screenshot/` | Capture and analyze screenshots (includes Python helper) |
+
 ### Skill Philosophy
 
 **1. Skills are not committed to the repo**
 
-Skills in `.claude/commands/` are excluded from version control by design:
+User-created skills in `.claude/commands/` are excluded from version control by design:
 - Every user's workflow is different
 - Rather than imposing generic skills, each user grows their own skill set
 
@@ -1073,6 +1105,86 @@ If approved, instruct the Karo to create the skill
 ```
 
 Skills are user-driven. Automatic creation would lead to unmanageable bloat — only keep what you find genuinely useful.
+
+---
+
+## Testing
+
+> Ported from upstream [multi-agent-shogun](https://github.com/yohey-w/multi-agent-shogun).
+
+Bakuhu ships with a comprehensive test suite covering both system behavior and agent coordination.
+
+### E2E Test Framework (`tests/e2e/`)
+
+End-to-end tests use **bats** (Bash Automated Testing System) with a mock CLI layer that simulates agent behavior without real API calls:
+
+| Test Suite | What it covers |
+|-----------|----------------|
+| `e2e_basic_flow.bats` | Basic Shogun → Karo → Ashigaru command flow |
+| `e2e_parallel_tasks.bats` | Multiple Ashigaru executing in parallel |
+| `e2e_bloom_routing.bats` | Automatic model routing via Bloom Taxonomy |
+| `e2e_inbox_delivery.bats` | Mailbox system message delivery |
+| `e2e_escalation.bats` | 3-phase escalation (nudge → escape → /clear) |
+| `e2e_redo.bats` | Task redo protocol with session reset |
+| `e2e_clear_recovery.bats` | Agent recovery after /clear |
+| `e2e_blocked_by.bats` | Task dependency (blockedBy) unblocking |
+| `e2e_codex_startup.bats` | Codex CLI (Kyakusho) startup sequence |
+
+The mock CLI (`tests/e2e/mock_cli.sh`) intercepts `claude`, `gemini`, and `codex` commands. Agent behavior is defined in `tests/e2e/mock_behaviors/`.
+
+### Unit Tests (`tests/unit/`)
+
+| Test | What it covers |
+|------|----------------|
+| `test_dynamic_model_routing.bats` | Bloom routing decision logic |
+| `test_inbox_write.bats` | inbox_write.sh correctness and flock behavior |
+| `test_idle_flag.bats` | Agent idle flag set/clear lifecycle |
+| `test_ntfy_ack.bats` | ntfy acknowledgment flow |
+| `test_stop_hook.bats` | PreToolUse hook blocking behavior |
+| `test_switch_cli.bats` | CLI switching (claude ↔ codex ↔ gemini) |
+| `test_build_system.bats` | Build system correctness |
+
+### Running Tests
+
+```bash
+# Run all E2E tests
+bats tests/e2e/
+
+# Run all unit tests
+bats tests/unit/
+
+# Run a specific suite
+bats tests/e2e/e2e_basic_flow.bats
+```
+
+---
+
+## Android App
+
+> Ported from upstream [multi-agent-shogun](https://github.com/yohey-w/multi-agent-shogun).
+
+Bakuhu includes a native Android app for mobile command and monitoring — beyond the SSH/Termux approach.
+
+### Features
+
+- **Native Kotlin + Jetpack Compose** — modern Android architecture
+- **SSH connection to tmux** — connects directly to your running Bakuhu session
+- **ntfy notification integration** — real-time push notifications when tasks complete
+- **5-screen interface**: Agent grid, dashboard view, command input, settings, rate-limit status
+
+### Screenshots
+
+| Shogun Terminal | Agent Grid | Dashboard | Settings | Rate Limit |
+|:-:|:-:|:-:|:-:|:-:|
+| ![Shogun](android/screenshots/01_shogun_terminal.png) | ![Agents](android/screenshots/02_agents_grid.png) | ![Dashboard](android/screenshots/03_dashboard.png) | ![Settings](android/screenshots/04_settings.png) | ![Rate](android/screenshots/05_ratelimit.png) |
+
+### Installation
+
+Pre-built APKs are available in `android/release/`. Sideload onto your Android device:
+
+1. Enable "Install from unknown sources" in Android settings
+2. Transfer the APK to your phone
+3. Install and configure with your Tailscale IP and SSH credentials
 
 ---
 
@@ -1300,7 +1412,11 @@ multi-agent-bakuhu/
 │   ├── check_context.sh      # Measure agent context usage (run externally)
 │   ├── run_compact.sh        # Trigger /compact on an agent
 │   ├── ntfy.sh               # Send push notifications to phone
-│   └── ntfy_listener.sh      # Stream incoming messages from phone
+│   ├── ntfy_listener.sh      # Stream incoming messages from phone
+│   ├── agent_status.sh       # Check all agent states at once
+│   ├── switch_cli.sh         # Switch active CLI (claude/codex/gemini)
+│   ├── ratelimit_check.sh    # Check API rate limit status
+│   └── kill_playwright.sh    # Stop Playwright MCP processes
 │
 ├── config/
 │   ├── settings.yaml         # Language, ntfy, agent settings
@@ -1321,10 +1437,31 @@ multi-agent-bakuhu/
 │   ├── denrei/               # Denrei task queue
 │   └── 殿/                   # Lord's reports and documents
 │
-├── skills/                   # Reusable skill files
-│   ├── architecture.md       # System architecture reference
-│   ├── context-health.md     # Context management templates
+├── skills/                   # Modular knowledge files (agents load on demand)
+│   ├── bloom-routing.md      # Bloom Taxonomy L1-L6 model routing
+│   ├── context-health.md     # /compact templates, mixed strategies
+│   ├── identity-management.md# Identity isolation design
+│   ├── spec-before-action.md # Spec-first principle (all agents must read)
+│   ├── shinobi-manual.md     # Shinobi (Gemini) capabilities & protocol
+│   ├── shogun-agent-status/  # Agent status check skill
+│   ├── shogun-screenshot/    # Screenshot capture skill (Python helper)
 │   └── generated/            # Dev project skills (git-ignored)
+│
+├── tests/                    # Test suite
+│   ├── e2e/                  # End-to-end tests (bats + mock CLI)
+│   │   ├── mock_cli.sh       # Mock for claude/codex/gemini commands
+│   │   ├── mock_behaviors/   # Per-CLI mock behavior definitions
+│   │   ├── fixtures/         # Test fixtures
+│   │   └── helpers/          # Test helpers (assertions, tmux, setup)
+│   └── unit/                 # Unit tests (bats)
+│
+├── android/                  # Android app (Kotlin + Jetpack Compose)
+│   ├── app/                  # App source code
+│   ├── release/              # Pre-built APKs
+│   └── screenshots/          # App screenshots
+│
+├── agents/                   # Agent SDK definitions
+│   └── default/              # Default agent (agent.yaml + system.md)
 │
 ├── .claude/                  # Claude Code configuration
 │   ├── hooks/                # Pre/post tool hooks (gitignore guardian, etc.)
