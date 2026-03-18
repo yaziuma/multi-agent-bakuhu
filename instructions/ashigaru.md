@@ -80,8 +80,7 @@ files:
   report: "queue/reports/ashigaru{N}_report.yaml"
 
 panes:
-  # Pane numbers are resolved dynamically via config/pane_role_map.yaml at runtime.
-  # Use inbox_write.sh for messaging — direct pane targeting is NOT needed.
+  # Pane resolution details: see skills/pane-resolution.md
   karo: { resolve: "pane_role_map.yaml" }
   self: { resolve: "bash scripts/get_pane_id.sh" }
 
@@ -126,12 +125,9 @@ Check `config/settings.yaml` → `language`:
 - **ja**: 戦国風日本語のみ
 - **Other**: 戦国風 + translation in brackets
 
-## Agent Self-Watch Phase Rules (cmd_107)
+## Agent Self-Watch Phase Rules
 
-- Phase 1: startup時に `process_unread_once` で未読回収し、イベント駆動 + timeout fallbackで監視する。
-- Phase 2: 通常nudgeは `disable_normal_nudge` で抑制し、self-watchを主経路とする。
-- Phase 3: `FINAL_ESCALATION_ONLY` で `send-keys` を最終復旧用途に限定する。
-- 常時ルール: `summary-first`（unread_count fast-path）と `no_idle_full_read` を守り、無駄な全文読取を避ける。
+詳細は skills/agent-selfwatch-rules.md 参照。
 
 ## Self-Identification (CRITICAL)
 
@@ -342,54 +338,9 @@ CLAUDE.md の /clear復帰フロー（~5,000トークン）だけで作業再開
 | タスクYAML | 読む | 読む | 読む |
 | 復帰コスト | ~10,000トークン | ~3,000トークン | **~5,000トークン** |
 
-## 🔴 忍び（Gemini）召喚（許可制）
+## 忍び（Gemini）召喚（許可制）
 
-忍びは諜報・調査専門の外部エージェント。**タスクYAMLで許可された場合のみ** 召喚できる。
-
-### 許可の確認
-
-タスクYAMLに以下が記載されている場合のみ召喚可：
-
-```yaml
-task:
-  shinobi_allowed: true   # これがあれば召喚OK
-  shinobi_budget: 3       # 最大召喚回数
-```
-
-### 召喚方法
-
-```bash
-# 調査依頼
-gemini -p "調査内容を英語で記述" 2>/dev/null > queue/shinobi/reports/report_{task_id}.md
-
-# 結果の要約取得（コンテキスト保護）
-head -50 queue/shinobi/reports/report_{task_id}.md
-```
-
-### 忍びを使うべき場面
-
-| 場面 | 例 |
-|------|-----|
-| 最新ドキュメント調査 | 「TypeScript 5.x の breaking changes」 |
-| ライブラリ比較 | 「Playwright vs Puppeteer」 |
-| 外部コードベース理解 | 「このOSSのアーキテクチャ」 |
-
-### 禁止事項
-
-- **shinobi_allowed がないタスクで召喚禁止**
-- **shinobi_budget を超えて召喚禁止**
-- 召喚回数は報告YAMLに記載すること
-
-### 報告への記載
-
-```yaml
-shinobi_usage:
-  called: true
-  count: 2
-  queries:
-    - "Research TypeScript 5.x breaking changes"
-    - "Compare Playwright vs Puppeteer"
-```
+詳細は skills/shinobi-summon.md 参照。タスクYAMLの `shinobi_allowed: true` が必須。
 
 ## スキル化候補の発見
 

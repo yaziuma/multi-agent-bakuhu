@@ -66,10 +66,7 @@ files:
   gunshi_report: queue/reports/gunshi_report.yaml
 
 panes:
-  # Pane numbers are resolved dynamically via config/pane_role_map.yaml at runtime.
-  # Lookup: grep ': <role>' config/pane_role_map.yaml | awk '{print $1}' | tr -d ':'
-  karo: { resolve: "pane_role_map.yaml" }
-  gunshi: { resolve: "pane_role_map.yaml" }
+  <!-- bakuhu override --> ペイン解決手順は skills/pane-resolution.md 参照。
 
 inbox:
   write_script: "scripts/inbox_write.sh"
@@ -96,7 +93,7 @@ persona:
 | Shogun | shogun:0.0 | Strategic decisions, cmd issuance |
 | Karo | pane_role_map.yaml → karo | Commander — task decomposition, assignment, method decisions, final judgment |
 | Ashigaru 1-2 | pane_role_map.yaml → ashigaru{N} | Execution — code, files, build, done_keywords |
-| Denrei 1 | pane_role_map.yaml → denrei1 | External agent messenger (Gemini/Codex via denrei) |
+| Denrei 1 | <!-- bakuhu override --> 伝令ペイン情報は skills/pane-resolution.md 参照。 | |
 | Gunshi | pane_role_map.yaml → gunshi | Strategy & quality — QC, dashboard updates, report aggregation, design analysis |
 
 ### Report Flow (delegated)
@@ -430,38 +427,7 @@ files:
   gunshi_report: queue/reports/gunshi_report.yaml
 
 # ペイン設定
-panes:
-  # Pane numbers are resolved dynamically via config/pane_role_map.yaml at runtime.
-  karo: { resolve: "pane_role_map.yaml" }
-  gunshi: { resolve: "pane_role_map.yaml" }
-
-# send-keys ルール
-send_keys:
-  method: two_bash_calls
-  reason: "1回のBash呼び出しでEnterが正しく解釈されない"
-  to_karo_allowed: true
-  from_karo_allowed: false  # dashboard.md更新で報告
-
-# 家老の状態確認ルール
-karo_status_check:
-  method: tmux_capture_pane
-  command: "KARO_PANE=$(grep ': karo' config/pane_role_map.yaml | awk '{print $1}' | tr -d ':'); tmux capture-pane -t $KARO_PANE -p | tail -20"
-  busy_indicators:
-    - "thinking"
-    - "Effecting…"
-    - "Boondoggling…"
-    - "Puzzling…"
-    - "Calculating…"
-    - "Fermenting…"
-    - "Crunching…"
-    - "Esc to interrupt"
-  idle_indicators:
-    - "❯ "  # プロンプトが表示されている
-    - "bypass permissions on"  # 入力待ち状態
-  when_to_check:
-    - "指示を送る前に家老が処理中でないか確認"
-    - "タスク完了を待つ時に進捗を確認"
-  note: "処理中の場合は完了を待つか、急ぎなら割り込み可"
+<!-- bakuhu override --> ペイン解決+capture-pane手順は skills/pane-resolution.md 参照。
 
 # Memory MCP（知識グラフ記憶）
 memory:

@@ -119,16 +119,7 @@ Delivery is handled by `inbox_watcher.sh` (infrastructure layer).
 
 ## Legacy tmux send-keys Protocol (bakuhu denrei/shinobi)
 
-**For denrei/shinobi coordination only**, tmux send-keys is still used:
-
-- Polling forbidden (API cost)
-- **send-keys must be 2 separate Bash calls**:
-  ```bash
-  # Call 1: Send message
-  tmux send-keys -t multiagent:0.0 'メッセージ内容'
-  # Call 2: Send Enter
-  tmux send-keys -t multiagent:0.0 Enter
-  ```
+<!-- bakuhu override --> 伝令/忍び連携は skills/denrei-protocol.md, skills/external-agent-rules.md 参照。
 
 **Reporting flow (interrupt prevention)**:
 - Ashigaru → Karo: Report YAML + inbox_write (or send-keys for legacy)
@@ -203,10 +194,7 @@ Race condition is eliminated: `/clear` wipes old context. Agent re-reads YAML wi
 
 ## External Agent Summoning (bakuhu)
 
-**Rule**: Shinobi (Gemini) and Kyakusho (Codex) requests must go through Denrei (messengers):
-- Never summon Shinobi/Kyakusho directly
-- Karo creates denrei task → Denrei executes → Reports back
-- See `instructions/denrei.md`, `instructions/shinobi.md`, `instructions/kyakusho.md` for protocols
+<!-- bakuhu override --> 外部エージェント召喚は skills/external-agent-rules.md 参照。
 
 # Context Layers
 
@@ -224,25 +212,7 @@ System manages ALL white-collar work, not just self-improvement. Project folders
 
 # Context Health Management (bakuhu)
 
-## Context Usage Thresholds
-
-| Status | Usage | Recommended Action |
-|--------|-------|-------------------|
-| Healthy | 0-60% | Continue normal work |
-| Warning | 60-75% | /compact after current task |
-| Danger | 75-85% | /compact immediately |
-| Critical | 85%+ | /clear immediately (interrupt work if needed) |
-
-**/compact must use custom instructions.** See `skills/context-health.md` for templates and mixed strategies.
-
-## Agent-Specific Strategies
-
-| Agent | Strategy |
-|-------|----------|
-| **Shogun** | /compact priority (context retention important) |
-| **Karo** | Mixed: /compact 3x → /clear 1x (30% cost savings) |
-| **Ashigaru** | /clear priority (after each task) |
-| **Denrei** | /clear after each task |
+<!-- bakuhu override --> コンテキスト健康管理は skills/context-health.md 参照。
 
 # Shogun Mandatory Rules
 
@@ -267,43 +237,11 @@ Shogun's permitted actions: YAML editing, send-keys, reading dashboard/reports, 
 
 # Agent Team (bakuhu)
 
-`.claude/agents/` directory contains Agent Team definitions for Task tool coordination:
-
-| Agent | Role | Mode | Model |
-|-------|------|------|-------|
-| **bugyo** | Project coordinator (task splitting, team management) | delegate | opus |
-| **ashigaru** | Implementation worker | default | sonnet |
-| **goikenban** | Code reviewer (read-only, no file edits) | read-only | sonnet |
-
-**Command chain**: Lord/Shogun → Karo → Bugyo → Ashigaru/Goikenban
-- Shogun does NOT spawn Agent Team directly (violates chain of command)
-- Karo spawns bugyo via Task tool when ordered
-- Bugyo delegates to ashigaru (implementation) and goikenban (review)
-- Results: Ashigaru/Goikenban → Bugyo → Karo → Dashboard
-
-**Relationship with tmux hierarchy**:
-
-| Aspect | tmux Agents (Karo/Ashigaru 1-8) | Agent Team (Bugyo/Ashigaru/Goikenban) |
-|--------|----------------------------------|---------------------------------------|
-| Lifespan | Long-running (persistent) | Task-scoped (finite) |
-| Process | Independent tmux panes | Nested in Karo's process |
-| Communication | inbox_write.sh + YAML | Task tool messages |
-
-Both layers coexist. Karo coordinates tmux ashigaru AND Agent Team members.
+<!-- bakuhu override --> Agent Team詳細は skills/bugyo-workflow.md 参照。
 
 # Skills Configuration (bakuhu)
 
-```
-skills/                        # Core skills (git-tracked)
-  ├─ context-health.md         # /compact templates, mixed strategies
-  ├─ shinobi-manual.md         # Shinobi capabilities, summoning protocol
-  ├─ architecture.md           # 4-layer model, hierarchy, project mgmt
-  ├─ spec-before-action.md     # 仕様先行の原則（全階層必読）
-  ├─ skill-creator/            # Skill auto-generation meta-skill (from fork)
-  └─ generated/                # Dev project skills (git-ignored)
-      ├─ async-rss-fetcher.md
-      └─ ...
-```
+<!-- bakuhu override --> Skills構成は skills/ ディレクトリ直下を参照。
 
 **全エージェント必読**: `skills/spec-before-action.md` — 仕様が完全確定するまで下流に実装指示を送るな。違反は殿の逆鱗に触れる。
 
