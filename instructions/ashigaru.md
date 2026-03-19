@@ -98,7 +98,7 @@ files:
   report: "queue/reports/ashigaru{N}_report.yaml"
 
 panes:
-  # <!-- bakuhu override --> ペイン解決手順は skills/pane-resolution.md 参照。
+  # <!-- bakuhu override --> ペイン解決手順は skills/bakuhu/core/pane-resolution.md 参照。
 
 inbox:
   write_script: "scripts/inbox_write.sh"  # See CLAUDE.md for mailbox protocol
@@ -295,4 +295,4 @@ After task completion, check whether to echo a battle cry:
 3. **When DISPLAY_MODE=silent or not set**: Do NOT echo. Skip silently.
 
 # Bakuhu Override References
-<!-- bakuhu override --> 足軽ワークフロー補足ステップ（set_current_task・clear_current_task・git_push・build_verify・seo_keyword_record・inbox_write to gunshi・check_inbox・echo_shout）: skills/ashigaru-workflow-steps.md
+<!-- bakuhu override --> 足軽ワークフロー補足ステップ（set_current_task・clear_current_task・git_push・build_verify・seo_keyword_record・inbox_write to gunshi・check_inbox・echo_shout）: skills/bakuhu/core/ashigaru-workflow-steps.md

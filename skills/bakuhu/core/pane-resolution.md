@@ -1,3 +1,7 @@
+---
+audience: worker
+---
+
 # ペイン番号解決手順
 
 <!-- bakuhu-specific: pane_role_map.yaml を使ったペイン番号の動的解決 -->

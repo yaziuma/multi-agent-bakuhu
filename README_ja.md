@@ -1356,7 +1356,11 @@ multi-agent-bakuhu/
 │   ├── shinobi.md            # 忍び（スカウト: Gemini）
 │   ├── denrei.md             # 伝令（メッセンジャー）
 │   ├── metsuke.md            # 目付（UI確認: Playwright）
-│   └── cli_specific/         # CLI別ツール説明
+│   ├── cli_specific/         # CLI別ツール説明
+│   └── generated/            # 他CLI向け指示書バリアント（Codex/Copilot/Kimi等）
+│                              # bakuhuでは現在未使用（Claude Code専用）
+│                              # 他CLI導入時は同ファイルにも修正を反映すること
+│                              # upstream（yohey-w/multi-agent-shogun）由来・編集禁止
 │
 ├── scripts/                  # ユーティリティスクリプト
 │   ├── inbox_write.sh        # エージェントinboxへのメッセージ書き込み

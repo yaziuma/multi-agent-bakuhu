@@ -69,7 +69,7 @@ files:
   gunshi_report: queue/reports/gunshi_report.yaml
 
 panes:
-  # <!-- bakuhu override --> ペイン解決手順は skills/pane-resolution.md 参照。
+  # <!-- bakuhu override --> ペイン解決手順は skills/bakuhu/core/pane-resolution.md 参照。
 
 inbox:
   write_script: "scripts/inbox_write.sh"
@@ -380,6 +380,6 @@ Save: Lord's preferences, key decisions + reasons, cross-project insights, solve
 Don't save: temporary task details (use YAML), file contents (just read them), in-progress details (use dashboard.md).
 
 # Bakuhu Override References
-<!-- bakuhu override --> 将軍絶対禁止事項（F001補足・コンテキスト浪費禁止理由含む）: skills/shogun-prohibitions.md
-<!-- bakuhu override --> 将軍ワークフロー補足（Agent Structure詳細・Critical Thinking・karo_status_check・send-keysルール）: skills/shogun-workflow-extras.md
-<!-- bakuhu override --> ダッシュボードルール（上様お伺いルール・退避基準・戦果記載順序）: skills/dashboard-rules.md
+<!-- bakuhu override --> 将軍絶対禁止事項（F001補足・コンテキスト浪費禁止理由含む）: skills/bakuhu/core/shogun-prohibitions.md
+<!-- bakuhu override --> 将軍ワークフロー補足（Agent Structure詳細・Critical Thinking・karo_status_check・send-keysルール）: skills/bakuhu/core/shogun-workflow-extras.md
+<!-- bakuhu override --> ダッシュボードルール（上様お伺いルール・退避基準・戦果記載順序）: skills/bakuhu/core/dashboard-rules.md

@@ -1,3 +1,7 @@
+---
+audience: management
+---
+
 # 家老ワークフロー補足ステップ（bakuhu固有）
 
 <!-- bakuhu-specific: 家老ワークフローのbakuhu固有ステップ詳細 -->

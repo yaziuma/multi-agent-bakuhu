@@ -1,3 +1,7 @@
+---
+audience: worker
+---
+
 # 忍び（Shinobi / Gemini）召喚マニュアル
 
 > CLAUDE.md から分離。忍び召喚時に参照。

@@ -1,3 +1,7 @@
+---
+audience: all
+---
+
 # 伝令（Denrei）プロトコル
 
 <!-- bakuhu-specific: 伝令は bakuhu 固有の外部連絡エージェント -->

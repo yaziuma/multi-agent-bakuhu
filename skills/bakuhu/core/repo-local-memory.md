@@ -1,3 +1,7 @@
+---
+audience: all
+---
+
 # Repo-Local Memory と Skills 構成（bakuhu固有）
 
 <!-- bakuhu-specific: Layer 1b repo-local memory と skills/ ディレクトリ構成 -->

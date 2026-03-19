@@ -64,6 +64,13 @@ if [[ "$(basename "$NORM_PATH")" == "shogun.md" ]]; then
     exit 0
 fi
 
+  # Claude Code auto-memory ディレクトリは許可
+  CLAUDE_MEMORY_DIR="$HOME/.claude/projects/$(echo "$HOOK_PROJECT_DIR" | sed 's|/|-|g')/memory/"
+  if [[ "$NORM_PATH" == "$CLAUDE_MEMORY_DIR"* ]]; then
+      hook_log "$HOOK_NAME" "SHOGUN_WRITE_ALLOW_CLAUDE_MEMORY" "path=$NORM_PATH" "allow"
+      exit 0
+  fi
+
 # 他役職メモリ禁止
 # bakuhu-alignment/は一時バイパス（Phase 1完了後に復元）
 if [[ "$NORM_PATH" == */bakuhu-alignment/* ]]; then

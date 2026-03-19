@@ -1,3 +1,7 @@
+---
+audience: worker
+---
+
 # 奉行（Bugyo）運用ワークフロー
 
 <!-- bakuhu-specific: Agent Team 統括官の起動・連携・使い分け -->

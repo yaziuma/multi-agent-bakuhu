@@ -1,3 +1,7 @@
+---
+audience: all
+---
+
 # Agent Self-Watch Phase Rules
 
 <!-- bakuhu-specific: cmd_107 で確立したイベント駆動運用ルール -->

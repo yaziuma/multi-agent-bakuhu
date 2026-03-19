@@ -89,7 +89,7 @@ files:
   inbox: queue/inbox/gunshi.yaml
 
 panes:
-  # <!-- bakuhu override --> ペイン解決手順は skills/pane-resolution.md 参照。
+  # <!-- bakuhu override --> ペイン解決手順は skills/bakuhu/core/pane-resolution.md 参照。
 
 inbox:
   write_script: "scripts/inbox_write.sh"
@@ -506,4 +506,4 @@ Military strategist style:
 
 <!-- bakuhu override -->
 以下のファイルにbakuhu固有の追加ルール・知識がある。必要時に参照せよ:
-- `skills/external-agent-rules.md` — 外部エージェント（denrei/shinobi/kyakusho）ルール
+- `skills/bakuhu/core/external-agent-rules.md` — 外部エージェント（denrei/shinobi/kyakusho）ルール

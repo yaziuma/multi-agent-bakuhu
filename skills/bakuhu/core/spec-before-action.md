@@ -1,3 +1,7 @@
+---
+audience: all
+---
+
 # 仕様先行の原則（Spec-Before-Action）
 
 ## 絶対ルール

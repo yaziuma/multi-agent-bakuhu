@@ -1,3 +1,7 @@
+---
+audience: management
+---
+
 # Bloom Routing（タスク難易度ルーティング）
 
 <!-- bakuhu-specific: Bloom's Taxonomy に基づく動的モデルルーティング -->

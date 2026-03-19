@@ -1,3 +1,7 @@
+---
+audience: management
+---
+
 # 将軍ワークフロー補足（Shogun Workflow Extras）
 
 <!-- bakuhu-specific: 将軍指示書の補足情報 -->

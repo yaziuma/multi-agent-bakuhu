@@ -1,3 +1,7 @@
+---
+audience: management
+---
+
 # コンテキスト健康管理 詳細リファレンス
 
 > CLAUDE.md から分離。閾値テーブルは CLAUDE.md に残存。

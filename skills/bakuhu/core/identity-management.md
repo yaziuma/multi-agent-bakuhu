@@ -1,3 +1,7 @@
+---
+audience: all
+---
+
 # Identity Management（@agent_id ルール）
 
 <!-- bakuhu-specific: tmux @agent_id による identity 管理 -->

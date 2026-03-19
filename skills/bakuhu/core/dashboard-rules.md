@@ -1,3 +1,7 @@
+---
+audience: management
+---
+
 # ダッシュボード管理ルール
 
 <!-- bakuhu-specific: dashboard.md の配置・更新・責任範囲 -->

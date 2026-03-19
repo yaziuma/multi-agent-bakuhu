@@ -1,3 +1,7 @@
+---
+audience: management
+---
+
 # 将軍絶対禁止事項（Shogun Absolute Prohibitions）
 
 <!-- bakuhu-specific: 将軍の絶対禁止行為と許可行為の詳細テーブル -->

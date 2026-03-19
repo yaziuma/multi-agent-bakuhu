@@ -1,3 +1,7 @@
+---
+audience: worker
+---
+
 # 忍び（Gemini）召喚プロトコル（足軽視点）
 
 <!-- bakuhu-specific: 足軽が許可制で忍びを召喚する手順 -->

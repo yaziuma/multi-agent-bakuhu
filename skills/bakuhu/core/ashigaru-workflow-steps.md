@@ -1,3 +1,7 @@
+---
+audience: worker
+---
+
 # 足軽ワークフロー補足ステップ（bakuhu固有）
 
 <!-- bakuhu-specific: 足軽ワークフローのbakuhu固有ステップ詳細 -->

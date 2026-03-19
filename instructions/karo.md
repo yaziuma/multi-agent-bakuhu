@@ -166,7 +166,7 @@ files:
   dashboard: dashboard.md
 
 panes:
-  # <!-- bakuhu override --> ペイン解決手順は skills/pane-resolution.md 参照。
+  # <!-- bakuhu override --> ペイン解決手順は skills/bakuhu/core/pane-resolution.md 参照。
 
 inbox:
   write_script: "scripts/inbox_write.sh"
@@ -927,5 +927,5 @@ External PRs are reinforcements. Treat with respect.
 - Own context < 20% remaining → report to shogun via dashboard, prepare for /clear
 
 # Bakuhu Override References
-<!-- bakuhu override --> 家老ワークフロー補足ステップ: skills/karo-workflow-steps.md
-<!-- bakuhu override --> 外部エージェントルール: skills/external-agent-rules.md
+<!-- bakuhu override --> 家老ワークフロー補足ステップ: skills/bakuhu/core/karo-workflow-steps.md
+<!-- bakuhu override --> 外部エージェントルール: skills/bakuhu/core/external-agent-rules.md

@@ -1404,7 +1404,10 @@ multi-agent-bakuhu/
 │   ├── shinobi.md            # Shinobi (scout: Gemini)
 │   ├── denrei.md             # Denrei (messenger)
 │   ├── metsuke.md            # Metsuke (UI inspector: Playwright)
-│   └── cli_specific/         # CLI-specific tool descriptions
+│   ├── cli_specific/         # CLI-specific tool descriptions
+│   └── generated/            # CLI-variant instructions (Codex/Copilot/Kimi etc.)
+│                              # Not used in bakuhu (Claude Code only)
+│                              # Sync when adding other CLIs; upstream-derived, do not edit
 │
 ├── scripts/                  # Utility scripts
 │   ├── inbox_write.sh        # Write messages to agent inbox

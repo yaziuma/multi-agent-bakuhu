@@ -1,3 +1,7 @@
+---
+audience: worker
+---
+
 # 客将（Kyakusho）召喚プロトコル
 
 <!-- bakuhu-specific: 客将は bakuhu 固有の外部戦略エージェント（Codex CLI経由） -->
