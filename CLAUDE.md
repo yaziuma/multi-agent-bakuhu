@@ -230,9 +230,6 @@ System manages ALL white-collar work, not just self-improvement. Project folders
 <!-- bakuhu override --> 外部エージェント召喚は skills/bakuhu/core/external-agent-rules.md 参照。
 <!-- bakuhu override --> コンテキスト健康管理は skills/bakuhu/core/context-health.md 参照。
 <!-- bakuhu override --> Skills構成は skills/bakuhu/core/repo-local-memory.md 参照。
-<!-- bakuhu override --> Git Commit Rule（殿の許可必須）は .claude/rules/bakuhu/git-commit-rule.md 参照。
-<!-- bakuhu override --> Settings配置ルール（.claude/必須）は .claude/rules/bakuhu/settings-placement-rule.md 参照。
-<!-- bakuhu override --> .gitignore保護・Mandatory Reviewは .claude/rules/bakuhu/production-safety.md 参照。
 
 # Test Rules (all agents)
 

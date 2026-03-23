@@ -10,8 +10,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-POLICY_DIR="$PROJECT_DIR/.claude/hooks/policies"
-HOOK_DIR="$PROJECT_DIR/.claude/hooks"
+POLICY_DIR="$PROJECT_DIR/.claude/hooks/core/policies"
+HOOK_DIR="$PROJECT_DIR/.claude/hooks/core"
 LOG_FILE="$PROJECT_DIR/logs/selftest_failure.log"
 HOOK_COMMON="$PROJECT_DIR/scripts/lib/hook_common.sh"
 
@@ -252,10 +252,10 @@ if [[ $ERRORS -gt 0 ]]; then
 
     # === フォールバック: gitで安定版ポリシーへのロールバック試行 ===
     log_info "フォールバック: 安定版ポリシーへのロールバックを試行..."
-    LAST_GOOD_COMMIT=$(cd "$PROJECT_DIR" && git log --oneline -10 -- .claude/hooks/policies/ 2>/dev/null | head -1 | awk '{print $1}')
+    LAST_GOOD_COMMIT=$(cd "$PROJECT_DIR" && git log --oneline -10 -- .claude/hooks/core/policies/ 2>/dev/null | head -1 | awk '{print $1}')
     if [[ -n "$LAST_GOOD_COMMIT" ]]; then
         log_info "  直近の安定版commit: $LAST_GOOD_COMMIT"
-        log_info "  手動ロールバック: git checkout $LAST_GOOD_COMMIT -- .claude/hooks/policies/"
+        log_info "  手動ロールバック: git checkout $LAST_GOOD_COMMIT -- .claude/hooks/core/policies/"
         log_info "  自動ロールバックは安全のため無効化しています。上記コマンドを手動で実行してください。"
     else
         log_warn "  ポリシーのgit履歴が見つかりません"

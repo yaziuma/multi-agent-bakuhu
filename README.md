@@ -943,6 +943,33 @@ Each role has a dedicated memory file. Cross-role writes are blocked at the hook
 - JSON Schema validation of all policy YAML files
 - Zero-tolerance: any failure blocks the session
 
+### Customization: core/ vs local/
+
+The hook and rules directories are split into `core/` (git-tracked) and `local/` (git-ignored) to separate shared infrastructure from user-specific behavior:
+
+| Directory | Git-tracked | Purpose |
+|-----------|-------------|---------|
+| `hooks/core/` | ✅ Yes | Role-based guard scripts — shared with all cloners |
+| `hooks/local/` | ❌ No | User-specific hooks (e.g., gitignore-guardian) |
+| `rules/bakuhu/core/` | ✅ Yes | Multi-agent system operational rules |
+| `rules/bakuhu/local/` | ❌ No | User-specific operational rules (git-ignored, with conditional loading) |
+
+**Conditional loading with `paths:` frontmatter** — Rules in `local/` can be loaded only when relevant files are being edited:
+
+```yaml
+---
+paths:
+  - "**/*.py"
+  - "pyproject.toml"
+---
+# Python Environment Rule
+...
+```
+
+This keeps context lean: Python rules only load during Python work, UI rules only during frontend work.
+
+**Clone-ready design** — After cloning, only `core/` hooks and rules are active. Users add `local/` files for their own operational context.
+
 ### Design Philosophy
 
 #### Why a hierarchy (Shogun → Karo → Ashigaru)?
@@ -1467,9 +1494,22 @@ multi-agent-bakuhu/
 │   └── default/              # Default agent (agent.yaml + system.md)
 │
 ├── .claude/                  # Claude Code configuration
-│   ├── hooks/                # Pre/post tool hooks (gitignore guardian, etc.)
+│   ├── hooks/
+│   │   ├── core/           # Role-based access control hooks (git-tracked)
+│   │   │   ├── shogun-guard.sh / shogun-write-guard.sh
+│   │   │   ├── karo-guard.sh / karo-write-guard.sh
+│   │   │   ├── ashigaru-guard.sh / ashigaru-write-guard.sh
+│   │   │   ├── denrei-guard.sh / denrei-write-guard.sh
+│   │   │   ├── global-guard.sh / shogun-task-guard.sh
+│   │   │   └── policies/   # YAML policy definitions per role
+│   │   └── local/           # User-specific hooks (git-ignored)
+│   ├── rules/
+│   │   └── bakuhu/
+│   │       ├── core/        # Multi-agent system rules (git-tracked)
+│   │       └── local/       # User-specific operational rules (git-tracked)
 │   ├── agents/               # Sub-agent definitions (bugyo, goikenban, etc.)
-│   ├── rules/                # Project rules (auto-loaded per directory)
+│   ├── settings.json        # Shared config (git-tracked)
+│   ├── settings.local.json  # User-specific config (git-ignored)
 │   └── commands/             # Slash commands
 │
 ├── logs/                     # Agent log files
@@ -1519,7 +1559,12 @@ Thresholds: 60% → compact after current task; 85%+ → `/clear` immediately.
 <details>
 <summary><b>Hook blocking file operations unexpectedly</b></summary>
 
-Hooks in `.claude/hooks/` enforce rules like `.gitignore` write protection. If a legitimate operation is blocked, request Lord's (殿's) explicit permission. Do NOT bypass hooks without permission.
+Hooks in `.claude/hooks/core/` enforce rules like `.gitignore` write protection. If a legitimate operation is blocked, request Lord's (殿's) explicit permission. Do NOT bypass hooks without permission.
+
+- **`core/` hooks** are git-tracked and shared with all cloners
+- **`local/` hooks** are git-ignored and user-specific
+- `settings.json` registers only `core/` hooks (for cloners)
+- `settings.local.json` can register both `core/` and `local/` hooks (user-specific settings)
 
 </details>
 

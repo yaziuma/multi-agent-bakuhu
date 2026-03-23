@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/shogun-guard.sh"
+            "command": "bash .claude/hooks/core/shogun-guard.sh"
           }
         ]
       },
@@ -15,25 +15,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/shogun-write-guard.sh"
-          }
-        ]
-      },
-      {
-        "matcher": "Write|Edit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .claude/hooks/gitignore-guardian-write.sh"
-          }
-        ]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .claude/hooks/gitignore-guardian-bash.sh"
+            "command": "bash .claude/hooks/core/shogun-write-guard.sh"
           }
         ]
       },
@@ -42,7 +24,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/shogun-task-guard.sh"
+            "command": "bash .claude/hooks/core/shogun-task-guard.sh"
           }
         ]
       }
