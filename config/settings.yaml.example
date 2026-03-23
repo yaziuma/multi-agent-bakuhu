@@ -1,0 +1,56 @@
+# multi-agent-shogun 設定ファイル（サンプル）
+# このファイルをコピーして settings.yaml を作成し、パスを環境に合わせて編集してください。
+# cp config/settings.yaml.example config/settings.yaml
+
+# 足軽の人数（1-8、兵糧節約のため2人に制限）
+ashigaru_count: 2
+
+# 言語設定
+# ja: 日本語（戦国風日本語のみ、併記なし）
+# en: 英語（戦国風日本語 + 英訳併記）
+# その他の言語コード（es, zh, ko, fr, de 等）も対応
+language: ja
+
+# シェル設定
+# bash: bash用プロンプト（デフォルト）
+# zsh: zsh用プロンプト
+shell: bash
+
+# スキル設定
+skill:
+  # スキル保存先（スキル名に shogun- プレフィックスを付けて保存）
+  save_path: "~/.claude/skills/"
+
+  # ローカルスキル保存先（このプロジェクト専用）
+  local_path: "/path/to/your/multi-agent-bakuhu/skills/"
+
+# ログ設定
+logging:
+  level: info # debug | info | warn | error
+  path: "/path/to/your/multi-agent-bakuhu/logs/"
+
+# 伝令設定
+denrei:
+  max_count: 1
+  model: haiku
+
+# 軍師設定（bakuhu固有: 段階的導入フラグ）
+# 有効化: enabled: true に変更して shutsujin_departure.sh を再起動
+# count は Phase 1 では常に 1（固定）
+gunshi:
+  enabled: true
+
+# bloom_routing設定（Phase 3: 動的モデルルーティング）
+# manual: 家老が手動判断（初期値・段階的導入のため）
+# auto: L4-L6を軍師に自動ルーティング
+# off: スキップ
+bloom_routing: auto
+
+# 客将設定
+kyakusho:
+  sandbox: read-only
+
+# サーバー設定（shogun-web等）
+server:
+  host: "0.0.0.0"
+  port: 30000
