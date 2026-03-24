@@ -3,12 +3,20 @@
 # 将軍はインフラ操作を直接実行できない。許可リスト→禁止リスト→デフォルト拒否。
 
 role: shogun
-version: "1.0"
+version: "1.1"
 description: "将軍（Shogun）コマンド・書き込みガードポリシー"
 default_action: deny
 
 rules:
-  # === コマンドガード: 許可リスト（最優先） ===
+  # === コマンドガード: 禁止リスト（最優先 p5 — allowより先評価） ===
+  - id: SHOGUN_DENY_INBOX_CLEAR_COMMAND
+    action: deny
+    pattern: "inbox_write.*clear_command"
+    type: command
+    description: "将軍からのclear_command送信を禁止（殿の厳命）。run_compact.shを使用せよ"
+    priority: 5
+
+  # === コマンドガード: 許可リスト（p10） ===
   - id: SHOGUN_ALLOW_INBOX
     action: allow
     pattern: "inbox_write.sh"
@@ -72,7 +80,7 @@ rules:
     description: "ローカルcurl許可"
     priority: 10
 
-  # === コマンドガード: 禁止リスト ===
+  # === コマンドガード: 禁止リスト（p50/p90） ===
   - id: SHOGUN_DENY_UVICORN
     action: deny
     pattern: "uvicorn"

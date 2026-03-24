@@ -1,0 +1,144 @@
+# custom_policy.yaml.example
+# ═══════════════════════════════════════════════════════════════
+# Policy YAML Customization Template
+# Copy a role's policy YAML and add your custom rules.
+#
+# Quick start:
+#   cp .claude/hooks/core/policies/karo_policy.yaml /tmp/my_karo_policy.yaml
+#   # Edit /tmp/my_karo_policy.yaml, then deploy:
+#   cp /tmp/my_karo_policy.yaml .claude/hooks/core/policies/karo_policy.yaml
+#
+# ⚠️  IMPORTANT: Do NOT edit policy files directly in production without testing.
+#     Use a staging copy, validate with `bash -n` and test before deploying.
+# ═══════════════════════════════════════════════════════════════
+
+# ─── Required header fields ───────────────────────────────────
+role: karo                          # One of: shogun / karo / ashigaru / denrei / global
+version: "1.1"                      # Increment when you modify this file
+description: "Example policy file"
+default_action: deny                # deny (recommended) or allow
+
+
+# ─── Rules ────────────────────────────────────────────────────
+# Each rule has these fields:
+#
+#   id:          Unique identifier (ROLE_TYPE_DESCRIPTION). Used in deny messages.
+#   action:      "allow" or "deny"
+#   pattern:     Regex pattern matched against the command or file path
+#   type:        "command"    → matches the bash command string (PreToolUse hook)
+#                "write_path" → matches the file path being written (Write/Edit hook)
+#   priority:    Integer. LOWER number = evaluated FIRST.
+#                allow at p5  overrides  deny at p10 ✓
+#                deny  at p10 overrides  allow at p50 ✓
+#   description: Human-readable explanation (shown in deny messages)
+#
+# ─── Priority evaluation order ────────────────────────────────
+#
+#   Rules are sorted by priority (ascending). First matching rule wins.
+#
+#   Recommended priority bands:
+#     1-9   : Critical overrides (e.g., block a specific dangerous subcommand)
+#     10-19 : Standard allow rules
+#     20-49 : Specific deny rules
+#     50-89 : Broad deny rules
+#     90-99 : Catch-all deny rules
+#     100   : Default deny-all (last resort)
+#
+# ─── Pattern syntax ───────────────────────────────────────────
+#
+#   Patterns are POSIX extended regex (ERE), matched with grep -E.
+#   Examples:
+#     "inbox_write.sh"           → matches any command containing "inbox_write.sh"
+#     "queue/.*\\.yaml$"         → matches any path ending in .yaml under queue/
+#     "curl.*localhost"          → matches curl commands to localhost
+#     "python |python3 "         → matches python invocations (note trailing space)
+#     ".*"                       → matches everything (use for deny-all at high priority)
+#
+# ─── Type: command vs write_path ──────────────────────────────
+#
+#   type: command
+#     Triggered by: PreToolUse hook (Bash tool)
+#     Matched against: the full bash command string
+#     Example pattern: "inbox_write.sh"
+#
+#   type: write_path
+#     Triggered by: PreToolUse hook (Write/Edit tool)
+#     Matched against: the resolved absolute file path
+#     Example pattern: "queue/.*\\.yaml$"
+
+rules:
+
+  # ─── EXAMPLE 1: Block a specific dangerous subcommand ─────────
+  # Priority 5: fires before the general allow at priority 10
+  - id: KARO_DENY_INBOX_CLEAR_COMMAND
+    action: deny
+    pattern: "inbox_write.*clear_command"
+    type: command
+    description: "Block karo from sending clear_command via inbox_write"
+    priority: 5
+
+  # ─── EXAMPLE 2: Allow a specific command ──────────────────────
+  - id: KARO_ALLOW_INBOX_WRITE
+    action: allow
+    pattern: "inbox_write.sh"
+    type: command
+    description: "Allow mailbox writes"
+    priority: 10
+
+  # ─── EXAMPLE 3: Allow a specific regex command ────────────────
+  # Match curl to localhost only (exact match via regex)
+  - id: KARO_ALLOW_CURL_LOCAL
+    action: allow
+    pattern: "curl.*localhost|curl.*127\\.0\\.0\\.1"
+    type: command
+    description: "Allow curl to localhost only"
+    priority: 10
+
+  # ─── EXAMPLE 4: Allow writing to a custom queue directory ─────
+  - id: KARO_WRITE_ALLOW_MY_QUEUE
+    action: allow
+    pattern: "queue/my_project/.*\\.yaml$"
+    type: write_path
+    description: "Allow writing to my project queue"
+    priority: 10
+
+  # ─── EXAMPLE 5: Deny a broad category of commands ─────────────
+  - id: KARO_DENY_PYTHON
+    action: deny
+    pattern: "python |python3 "
+    type: command
+    description: "Block direct Python execution (delegate to ashigaru)"
+    priority: 50
+
+  # ─── EXAMPLE 6: Deny writes to protected files ────────────────
+  - id: KARO_WRITE_DENY_DOTGIT
+    action: deny
+    pattern: "\\.gitignore|\\.gitattributes"
+    type: write_path
+    description: "Protect .gitignore and .gitattributes from modification"
+    priority: 50
+
+  # ─── EXAMPLE 7: Default deny-all (catch-all, always last) ─────
+  # Any command or path not matched by a higher-priority allow rule is denied.
+  - id: KARO_DENY_ALL
+    action: deny
+    pattern: ".*"
+    type: command
+    description: "Default: deny all commands not explicitly allowed"
+    priority: 100
+
+
+# ─── Tips ─────────────────────────────────────────────────────
+#
+# 1. Test your patterns before deploying:
+#      echo "your command here" | grep -E "your_pattern"
+#
+# 2. To debug which rule fired, check the deny message — it includes the rule ID.
+#
+# 3. After editing, verify YAML syntax:
+#      bash -n .claude/hooks/core/karo-guard.sh  # checks the hook script
+#
+# 4. The selftest validates policy YAML structure:
+#      bash scripts/selftest_hooks.sh
+#
+# 5. policy_schema.json defines the required YAML schema for validation.

@@ -970,6 +970,35 @@ This keeps context lean: Python rules only load during Python work, UI rules onl
 
 **Clone-ready design** — After cloning, only `core/` hooks and rules are active. Users add `local/` files for their own operational context.
 
+#### Customizing guard behavior with `policies/*.yaml`
+
+As of cmd_582, all guard scripts read their allow/deny patterns from **policy YAML files** in `.claude/hooks/core/policies/`. You **do not need to edit the hook scripts** — editing the YAML is all you need.
+
+| Policy file | Controls |
+|-------------|---------|
+| `shogun_policy.yaml` | Commands Shogun can run; files Shogun can write |
+| `karo_policy.yaml` | Commands Karo can run; files Karo can write |
+| `ashigaru_policy.yaml` | Files Ashigaru can write |
+| `denrei_policy.yaml` | Commands Denrei can run; files Denrei can write |
+| `global_policy.yaml` | Destructive operations blocked for **all roles** |
+
+**To add a custom allow/deny rule:**
+1. Open `.claude/hooks/core/policies/{role}_policy.yaml`
+2. Add a rule entry (see `policies/custom_policy.yaml.example` for a commented template)
+3. Restart the agent — no script editing required
+
+**Priority evaluation:** lower `priority` number = evaluated first. An `allow` rule at priority 5 overrides a `deny` rule at priority 10.
+
+```yaml
+# Example: allow Karo to write to a custom queue directory
+- id: KARO_WRITE_ALLOW_MY_QUEUE
+  action: allow
+  pattern: "queue/my_custom/"
+  type: write_path
+  priority: 5   # fires before the default deny (priority 100)
+  description: "Allow Karo to write to my custom queue"
+```
+
 ### Design Philosophy
 
 #### Why a hierarchy (Shogun → Karo → Ashigaru)?
@@ -1559,7 +1588,39 @@ Thresholds: 60% → compact after current task; 85%+ → `/clear` immediately.
 <details>
 <summary><b>Hook blocking file operations unexpectedly</b></summary>
 
-Hooks in `.claude/hooks/core/` enforce rules like `.gitignore` write protection. If a legitimate operation is blocked, request Lord's (殿's) explicit permission. Do NOT bypass hooks without permission.
+Hooks in `.claude/hooks/core/` enforce rules like `.gitignore` write protection. If a legitimate operation is blocked:
+
+**Step 1 — Identify the blocking rule**
+
+The deny message includes the rule ID (e.g., `rule=KARO_WRITE_DENY_ALL`). Note it.
+
+**Step 2 — Open the relevant policy YAML**
+
+```bash
+# For Karo write blocks:
+cat .claude/hooks/core/policies/karo_policy.yaml
+
+# For Shogun command blocks:
+cat .claude/hooks/core/policies/shogun_policy.yaml
+
+# For global (all roles) blocks:
+cat .claude/hooks/core/policies/global_policy.yaml
+```
+
+**Step 3 — Add an allow rule with a lower priority number**
+
+Priority evaluation: lower number fires first. Add your `allow` rule with a `priority` lower than the blocking `deny` rule.
+
+```yaml
+- id: KARO_WRITE_ALLOW_MY_PATH
+  action: allow
+  pattern: "queue/my_custom/"
+  type: write_path   # or: command
+  priority: 5        # fires before deny rules at priority 50/100
+  description: "Allow write to my custom path"
+```
+
+See `policies/custom_policy.yaml.example` for a full commented template.
 
 - **`core/` hooks** are git-tracked and shared with all cloners
 - **`local/` hooks** are git-ignored and user-specific

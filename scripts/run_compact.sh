@@ -80,3 +80,22 @@ sleep 10
 CONTEXT_PERCENT=$(bash "${SCRIPT_DIR}/check_context.sh" "$AGENT_ID" 2>/dev/null || echo "unknown")
 
 echo "Context: $CONTEXT_PERCENT"
+
+# Auto-run /clear if context is still at or above Critical threshold
+# Threshold is read from context-reporting.md (no hardcoding per 殿の厳命)
+CONTEXT_RULES="${SCRIPT_DIR}/../.claude/rules/bakuhu/core/context-reporting.md"
+CLEAR_THRESHOLD=""
+if [ -f "$CONTEXT_RULES" ]; then
+    # Extract the Critical threshold (last match = Strict Thresholds table overrides original)
+    # Matches lines like: "| 80%+ | ⚫ Critical | ..."
+    CLEAR_THRESHOLD=$(grep -E '^\| *[0-9]+%\+ *\|.*Critical' "$CONTEXT_RULES" | \
+        grep -oE '[0-9]+%\+' | grep -oE '[0-9]+' | tail -1)
+fi
+
+if [ "$CONTEXT_PERCENT" != "unknown" ] && [ -n "$CLEAR_THRESHOLD" ]; then
+    PERCENT_NUM=$(echo "$CONTEXT_PERCENT" | grep -oE '^[0-9]+')
+    if [ -n "$PERCENT_NUM" ] && [ "$PERCENT_NUM" -ge "$CLEAR_THRESHOLD" ] 2>/dev/null; then
+        echo "Context ${CONTEXT_PERCENT} >= ${CLEAR_THRESHOLD}% (Critical threshold). Running /clear automatically..." >&2
+        bash "${SCRIPT_DIR}/run_clear.sh" "$AGENT_ID"
+    fi
+fi

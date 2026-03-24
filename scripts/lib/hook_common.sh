@@ -212,6 +212,131 @@ normalize_path() {
     fi
 }
 
+# === YAML-driven policy: ルールパーサー ===
+# 指定typeのルールをpriority順で出力
+# 出力形式: priority|action|match_type|pattern（1ルール1行）
+# mawk 1.3.4互換: gensub()不使用、gsub/sub/match/substr使用
+parse_policy_rules() {
+    local policy_file="$1"
+    local rule_type="$2"
+    awk -v target_type="$rule_type" '
+        BEGIN { id=""; action=""; pattern=""; rtype=""; priority=50; mtype="regex" }
+        /^  - id:/ {
+            if (rtype == target_type && pattern != "")
+                print priority "|" action "|" mtype "|" pattern
+            id=""; action=""; pattern=""; rtype=""; priority=50; mtype="regex"
+        }
+        /^    action:/ {
+            line = $0; sub(/^[[:space:]]*action:[[:space:]]*/,"",line); gsub(/"/,"",line); action=line
+        }
+        /^    pattern:/ {
+            line = $0; sub(/^[[:space:]]*pattern:[[:space:]]*/,"",line); gsub(/^"/,"",line); gsub(/"$/,"",line); pattern=line
+        }
+        /^    type:/ {
+            line = $0; sub(/^[[:space:]]*type:[[:space:]]*/,"",line); gsub(/"/,"",line); rtype=line
+        }
+        /^    priority:/ {
+            line = $0; sub(/^[[:space:]]*priority:[[:space:]]*/,"",line); priority=line+0
+        }
+        /^    match_type:/ {
+            line = $0; sub(/^[[:space:]]*match_type:[[:space:]]*/,"",line); gsub(/"/,"",line); mtype=line
+        }
+        END {
+            if (rtype == target_type && pattern != "")
+                print priority "|" action "|" mtype "|" pattern
+        }
+    ' "$policy_file" | sort -t'|' -k1 -n
+}
+
+# === コマンドポリシー適用 ===
+# 終了コード: 0=allow, 2=deny
+apply_command_policy() {
+    local command="$1"
+    local policy_file="$2"
+    local hook_name="$3"
+    local deny_msg="${4:-ポリシーにより禁止されています}"
+
+    # policy_file存在チェック（fail-closed）
+    if [[ ! -f "$policy_file" ]]; then
+        hook_log "$hook_name" "POLICY_ERROR" "policy_file not found: $policy_file" "deny"
+        echo "[ERROR] policy file not found: $policy_file" >&2
+        exit 2
+    fi
+
+    local default_action
+    default_action=$(grep "^default_action:" "$policy_file" | awk '{print $2}' | tr -d '"')
+
+    while IFS='|' read -r priority action mtype pattern; do
+        local matched=false
+        if [[ "$mtype" == "substring" ]]; then
+            [[ "$command" == *"$pattern"* ]] && matched=true
+        else
+            [[ "$command" =~ $pattern ]] && matched=true
+        fi
+        if $matched; then
+            hook_log "$hook_name" "POLICY_${action^^}" "pattern=$pattern" "$action"
+            if [[ "$action" == "allow" ]]; then
+                exit 0
+            else
+                echo "$deny_msg: $pattern" >&2
+                exit 2
+            fi
+        fi
+    done < <(parse_policy_rules "$policy_file" "command")
+
+    # デフォルトアクション
+    if [[ "$default_action" == "allow" ]]; then
+        exit 0
+    fi
+    hook_log "$hook_name" "DEFAULT_DENY" "no rule matched" "deny"
+    echo "$deny_msg (default deny)" >&2
+    exit 2
+}
+
+# === 書き込みパスポリシー適用 ===
+# 終了コード: 0=allow, 2=deny
+apply_write_policy() {
+    local filepath="$1"
+    local policy_file="$2"
+    local hook_name="$3"
+    local deny_msg="${4:-書き込みポリシーにより禁止されています}"
+
+    # policy_file存在チェック（fail-closed）
+    if [[ ! -f "$policy_file" ]]; then
+        hook_log "$hook_name" "POLICY_ERROR" "policy_file not found: $policy_file" "deny"
+        echo "[ERROR] policy file not found: $policy_file" >&2
+        exit 2
+    fi
+
+    local default_action
+    default_action=$(grep "^default_action:" "$policy_file" | awk '{print $2}' | tr -d '"')
+
+    while IFS='|' read -r priority action mtype pattern; do
+        local matched=false
+        if [[ "$mtype" == "substring" ]]; then
+            [[ "$filepath" == *"$pattern"* ]] && matched=true
+        else
+            [[ "$filepath" =~ $pattern ]] && matched=true
+        fi
+        if $matched; then
+            hook_log "$hook_name" "WRITE_${action^^}" "pattern=$pattern" "$action"
+            if [[ "$action" == "allow" ]]; then
+                exit 0
+            else
+                echo "$deny_msg: $filepath" >&2
+                exit 2
+            fi
+        fi
+    done < <(parse_policy_rules "$policy_file" "write_path")
+
+    if [[ "$default_action" == "allow" ]]; then
+        exit 0
+    fi
+    hook_log "$hook_name" "WRITE_DEFAULT_DENY" "no rule matched" "deny"
+    echo "$deny_msg (default deny): $filepath" >&2
+    exit 2
+}
+
 # === 自動実行: sourceされた時点で検証 ===
 verify_hook_common_integrity
 verify_epoch

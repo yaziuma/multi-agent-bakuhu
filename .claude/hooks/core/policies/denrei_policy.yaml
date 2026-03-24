@@ -1,9 +1,10 @@
 # denrei_policy.yaml - 伝令ポリシー
 # Identity分離設計書v3 セクション7 準拠
 # 伝令は実装コマンド禁止、gemini/codex許可、デフォルト許可。
+# [FIX-1] 書き込みデフォルト: deny_all追加 + queue/denrei/, queue/shinobi/ 明示allow
 
 role: denrei
-version: "1.0"
+version: "1.1"
 description: "伝令（Denrei）コマンド・書き込みガードポリシー"
 default_action: allow
 
@@ -88,6 +89,21 @@ rules:
     description: "伝令メモリファイル書き込み許可"
     priority: 10
 
+  # [FIX-1] 明示的 allow: queue/denrei/ と queue/shinobi/
+  - id: DENREI_WRITE_ALLOW_DENREI_QUEUE
+    action: allow
+    pattern: "queue/denrei/"
+    type: write_path
+    description: "denreiキュー書き込み許可"
+    priority: 10
+
+  - id: DENREI_WRITE_ALLOW_SHINOBI_QUEUE
+    action: allow
+    pattern: "queue/shinobi/"
+    type: write_path
+    description: "忍びレポート書き込み許可"
+    priority: 10
+
   - id: DENREI_WRITE_DENY_SOURCE_CODE
     action: deny
     pattern: "\\.(py|js|ts|jsx|tsx|html|css|scss)$"
@@ -115,3 +131,12 @@ rules:
     type: write_path
     description: "他役職メモリ書き込み禁止"
     priority: 50
+
+  # [FIX-1] denrei書き込みデフォルト禁止（明示allowのみ許可）
+  # priority: 100 = 最後に評価。allow ルール（priority: 10）が先にマッチすれば deny_all は評価されない。
+  - id: DENREI_WRITE_DENY_ALL
+    action: deny
+    pattern: ".*"
+    type: write_path
+    description: "denrei書き込みデフォルト禁止（明示allowのみ許可）"
+    priority: 100

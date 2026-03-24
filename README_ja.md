@@ -947,6 +947,35 @@ paths:
 
 **クローン即動作設計** — クローン直後は `core/` フックとルールのみが有効。ユーザーは `local/` ファイルを追加して自分の運用コンテキストをカスタマイズします。
 
+#### `policies/*.yaml` でガード動作をカスタマイズ
+
+cmd_582以降、全ガードスクリプトは `.claude/hooks/core/policies/` の**ポリシーYAMLファイル**から許可/禁止パターンを読み込みます。**hookスクリプトを直接編集する必要はありません** — YAMLを編集するだけです。
+
+| ポリシーファイル | 制御対象 |
+|----------------|---------|
+| `shogun_policy.yaml` | 将軍が実行できるコマンド・書き込めるファイル |
+| `karo_policy.yaml` | 家老が実行できるコマンド・書き込めるファイル |
+| `ashigaru_policy.yaml` | 足軽が書き込めるファイル |
+| `denrei_policy.yaml` | 伝令が実行できるコマンド・書き込めるファイル |
+| `global_policy.yaml` | **全ロール共通**の破壊的操作ブロック |
+
+**カスタムルールの追加手順：**
+1. `.claude/hooks/core/policies/{role}_policy.yaml` を開く
+2. ルールエントリを追加（コメント付きテンプレートは `policies/custom_policy.yaml.example` を参照）
+3. エージェントを再起動 — スクリプト編集は不要
+
+**priority評価順序：** 数値が小さいほど先に評価。priority 5の`allow`ルールはpriority 10の`deny`ルールより先に発動。
+
+```yaml
+# 例: 家老がカスタムキューディレクトリに書き込めるようにする
+- id: KARO_WRITE_ALLOW_MY_QUEUE
+  action: allow
+  pattern: "queue/my_custom/"
+  type: write_path
+  priority: 5   # デフォルトdeny（priority 100）より先に発動
+  description: "カスタムキューへの書き込みを許可"
+```
+
 ### 🧭 設計思想
 
 #### なぜ階層構造（将軍→家老→足軽）なのか
@@ -1513,7 +1542,39 @@ bash scripts/run_compact.sh karo
 <details>
 <summary><b>hookがファイル操作を予期せずブロックする</b></summary>
 
-`.claude/hooks/core/` のhookは `.gitignore` 書き込み保護などのルールを強制します。正当な操作がブロックされた場合は殿に明示的な許可を求めてください。許可なしのhookバイパスは禁止です。
+`.claude/hooks/core/` のhookは `.gitignore` 書き込み保護などのルールを強制します。正当な操作がブロックされた場合の調査手順：
+
+**Step 1 — ブロックしているルールを特定**
+
+denyメッセージにルールID（例: `rule=KARO_WRITE_DENY_ALL`）が含まれます。メモしてください。
+
+**Step 2 — 該当ポリシーYAMLを開く**
+
+```bash
+# 家老の書き込みブロックの場合:
+cat .claude/hooks/core/policies/karo_policy.yaml
+
+# 将軍のコマンドブロックの場合:
+cat .claude/hooks/core/policies/shogun_policy.yaml
+
+# 全ロール共通（global）のブロックの場合:
+cat .claude/hooks/core/policies/global_policy.yaml
+```
+
+**Step 3 — 低いpriorityのallowルールを追加**
+
+priority評価：数値が小さいほど先に発動。既存のdenyルールより低いpriorityでallowルールを追加。
+
+```yaml
+- id: KARO_WRITE_ALLOW_MY_PATH
+  action: allow
+  pattern: "queue/my_custom/"
+  type: write_path   # または: command
+  priority: 5        # priority 50/100のdenyより先に発動
+  description: "カスタムパスへの書き込みを許可"
+```
+
+`policies/custom_policy.yaml.example` にコメント付きテンプレートがあります。
 
 - **`core/` フック** はgit追跡済みで全cloner共通
 - **`local/` フック** はgit管理外でユーザー独自

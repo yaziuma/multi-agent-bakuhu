@@ -1,9 +1,10 @@
 # ashigaru_policy.yaml - 足軽ポリシー
 # Identity分離設計書v3 セクション7 準拠
 # 足軽は将軍直接連絡禁止のみ、デフォルト許可。
+# [FIX-2] .gitignore/.gitattributes 明示 deny 追加（production-safety Rule 1）
 
 role: ashigaru
-version: "1.0"
+version: "1.1"
 description: "足軽（Ashigaru）コマンド・書き込みガードポリシー"
 default_action: allow
 
@@ -57,4 +58,12 @@ rules:
     pattern: "(shogun|karo|denrei)\\.md$"
     type: write_path
     description: "他役職メモリ書き込み禁止"
+    priority: 50
+
+  # [FIX-2] .gitignore / .gitattributes 明示 deny（production-safety Rule 1 / defense-in-depth）
+  - id: ASHIGARU_WRITE_DENY_PROTECTED_FILES
+    action: deny
+    pattern: "\\.gitignore|\\.gitattributes"
+    type: write_path
+    description: ".gitignore/.gitattributes書き込み禁止（production-safety Rule 1）"
     priority: 50
