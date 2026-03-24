@@ -9,7 +9,7 @@ HOOK_NAME="denrei-guard"
 
 # hook_common.sh をsource（自動的に整合性検証+エポック検証）
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/../../../scripts/lib/hook_common.sh"
+source "$SCRIPT_DIR/../../../scripts/bakuhu/lib/hook_common.sh"
 
 # ロールチェック: denreiロール以外は即exit 0
 check_role_match "denrei"

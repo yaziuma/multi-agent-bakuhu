@@ -914,7 +914,7 @@ hook_common.sh を読み取り専用に設定（chmod 444）
 
 #### 起動時セルフテスト
 
-`scripts/selftest_hooks.sh` がセッション起動時にフックシステムを自動検証：
+`scripts/bakuhu/selftest_hooks.sh` がセッション起動時にフックシステムを自動検証：
 - 全フックファイルが正しい実行権限で存在すること
 - `hook_common.sh`（共有フックライブラリ）のSHA-256整合性
 - 全ポリシーYAMLのJSON Schemaバリデーション
@@ -1376,14 +1376,14 @@ GeminiおよびCodex CLIが別途インストール済みであること。
 
 ```bash
 # 家老のコンテキスト使用率を確認（将軍から実行）
-bash scripts/check_context.sh karo
+bash scripts/bakuhu/check_context.sh karo
 
 # 特定の足軽を確認
-bash scripts/check_context.sh ashigaru1
+bash scripts/bakuhu/check_context.sh ashigaru1
 
 # エージェントをコンパクト（スクリプト経由、直接入力は禁止）
-bash scripts/run_compact.sh karo
-bash scripts/run_compact.sh ashigaru1
+bash scripts/bakuhu/run_compact.sh karo
+bash scripts/bakuhu/run_compact.sh ashigaru1
 ```
 
 **重要:** コンテキスト測定は外部から行う（将軍が家老を測定、家老が足軽を測定）。自己測定は不正確なため禁止。
@@ -1528,11 +1528,11 @@ inbox_watcherのエスカレーションシステムが自動対処します：
 
 ```bash
 # コンテキスト計測（外部から実行 — 自己測定は不正確なため禁止）
-bash scripts/check_context.sh karo
-bash scripts/check_context.sh ashigaru1
+bash scripts/bakuhu/check_context.sh karo
+bash scripts/bakuhu/check_context.sh ashigaru1
 
 # compact実行（将軍が家老に、家老が足軽に）
-bash scripts/run_compact.sh karo
+bash scripts/bakuhu/run_compact.sh karo
 ```
 
 閾値: 60% → タスク完了後にcompact; 85%以上 → 即時 `/clear`

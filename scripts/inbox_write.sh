@@ -20,6 +20,36 @@ if [ -z "$TARGET" ] || [ -z "$CONTENT" ]; then
     exit 1
 fi
 
+# settings.yaml からエージェント数を読み取り
+SETTINGS_YAML="${SCRIPT_DIR}/config/settings.yaml"
+ASHIGARU_COUNT=2  # fallback
+DENREI_COUNT=1    # fallback
+if [ -f "$SETTINGS_YAML" ]; then
+    _count=$(grep -E '^ashigaru_count:' "$SETTINGS_YAML" | grep -oE '[0-9]+' | head -1)
+    [ -n "$_count" ] && ASHIGARU_COUNT="$_count"
+    _dcount=$(grep -A3 '^denrei:' "$SETTINGS_YAML" | grep 'max_count:' | grep -oE '[0-9]+' | head -1)
+    [ -n "$_dcount" ] && DENREI_COUNT="$_dcount"
+fi
+
+# 有効なエージェントID一覧を生成
+_valid="shogun karo gunshi"  # gunshi は単一（複数化想定なし）
+for _i in $(seq 1 "$DENREI_COUNT"); do
+    _valid="$_valid denrei${_i}"
+done
+for _i in $(seq 1 "$ASHIGARU_COUNT"); do
+    _valid="$_valid ashigaru${_i}"
+done
+
+# TARGET のバリデーション
+_found=0
+for _id in $_valid; do
+    [ "$TARGET" = "$_id" ] && _found=1 && break
+done
+if [ "$_found" -eq 0 ]; then
+    echo "ERROR: Invalid agent ID '$TARGET'. Valid IDs: $(echo $_valid | tr ' ' ', ')" >&2
+    exit 1
+fi
+
 # Initialize inbox if not exists
 if [ ! -f "$INBOX" ]; then
     mkdir -p "$(dirname "$INBOX")"

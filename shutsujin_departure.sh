@@ -722,7 +722,7 @@ MAP_TMP="$MAP_FILE.tmp"
 MAP_HASH="$MAP_FILE.sha256"
 MAP_LOCK="$MAP_FILE.lock"
 EPOCH_FILE="$SCRIPT_DIR/config/session.epoch"
-HOOK_COMMON="$SCRIPT_DIR/scripts/lib/hook_common.sh"
+HOOK_COMMON="$SCRIPT_DIR/scripts/bakuhu/lib/hook_common.sh"
 HOOK_COMMON_HASH="$HOOK_COMMON.sha256"
 
 # Atomic書き込み with 排他ロック

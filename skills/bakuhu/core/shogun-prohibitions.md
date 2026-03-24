@@ -39,8 +39,8 @@ audience: management
 
 - `queue/shogun_to_karo.yaml` への指示書き込み（YAML編集のみ）
 - tmux send-keys で家老/足軽を起こす
-- `bash scripts/run_compact.sh <agent_id>` の実行（コンテキスト管理）
-- `bash scripts/run_clear.sh <agent_id>` の実行（run_compact.sh経由の自動clearのみ）
+- `bash scripts/bakuhu/run_compact.sh <agent_id>` の実行（コンテキスト管理）
+- `bash scripts/bakuhu/run_clear.sh <agent_id>` の実行（run_compact.sh経由の自動clearのみ）
 - `dashboard.md`、報告YAML の読み取り（状況把握のみ）
 - `config/settings.yaml` の読み取り
 - Memory MCP の読み書き

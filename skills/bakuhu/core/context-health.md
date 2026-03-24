@@ -73,8 +73,8 @@ compact回数カウンタ = 0 で運用開始
 | **slim_yaml.sh** + slim_yaml.py（karo専用） | 〃 | `queue/reports/*.yaml`（canonical除く） | 24時間超経過かつ非アクティブなレポートをアーカイブ | `queue/archive/reports/` |
 | **slim_yaml.sh** + slim_yaml.py（karo専用） | 〃 | `queue/inbox/*.yaml`（全エージェント分） | 全エージェントの `read: true` メッセージを削除 | `queue/archive/inbox_{agent}_{ts}.yaml` |
 | **yaml_archive_watcher.sh** → yaml_archive_done.sh → yaml_archive_done.py | デーモン常駐（自動） | `queue/shogun_to_karo.yaml` | done/completed cmd を削除（inotifywait監視） | `logs/archive/{date}/shogun_to_karo_done_{time}.yaml` |
-| **check_context.sh** | `bash scripts/check_context.sh <agent_id>` | （なし — 読み取り専用） | tmux経由で `/context` 送信、使用率% を返す | — |
-| **run_compact.sh** | `bash scripts/run_compact.sh <agent_id>` | （なし — コマンド送信のみ） | tmux経由で `/compact` 送信、完了後 check_context.sh で確認 | — |
+| **check_context.sh** | `bash scripts/bakuhu/check_context.sh <agent_id>` | （なし — 読み取り専用） | tmux経由で `/context` 送信、使用率% を返す | — |
+| **run_compact.sh** | `bash scripts/bakuhu/run_compact.sh <agent_id>` | （なし — コマンド送信のみ） | tmux経由で `/compact` 送信、完了後 check_context.sh で確認 | — |
 
 **備考**:
 - slim_yaml.sh は `queue/.slim_yaml.lock`（flock）で排他制御している
@@ -120,9 +120,9 @@ compact回数カウンタ = 0 で運用開始
 | **自動（常駐）** — shogun_to_karo.yaml 変更時 | インフラ（yaml_archive_watcher.sh） | yaml_archive_done.sh → yaml_archive_done.py | shutsujin_departure.sh 起動時に自動開始 |
 | **karo /compact 後** | shogun または karo | `bash scripts/slim_yaml.sh karo` | shogun_to_karo + tasks + reports + 全inbox を一括スリム化 |
 | **足軽 /clear 後** | karo | `bash scripts/slim_yaml.sh ashigaruN` | その足軽のinboxのみスリム化 |
-| **コンテキスト確認** | 上位者（shogun→karo計測、karo→ashigaru計測） | `bash scripts/check_context.sh <agent_id>` | ファイル変更なし。測定結果をダッシュボードに反映 |
-| **コンテキスト警告時（60-80%）** | 上位者 | `bash scripts/run_compact.sh <agent_id>` | /compact 送信 → 完了後に自動で check_context.sh も実行 |
-| **緊急時（80%+）** | 上位者（家老のみ） | `bash scripts/run_compact.sh <agent_id>` | auto-clear機能が閾値超過時に自動/clearを実行。**将軍は直接/clear禁止** |
+| **コンテキスト確認** | 上位者（shogun→karo計測、karo→ashigaru計測） | `bash scripts/bakuhu/check_context.sh <agent_id>` | ファイル変更なし。測定結果をダッシュボードに反映 |
+| **コンテキスト警告時（60-80%）** | 上位者 | `bash scripts/bakuhu/run_compact.sh <agent_id>` | /compact 送信 → 完了後に自動で check_context.sh も実行 |
+| **緊急時（80%+）** | 上位者（家老のみ） | `bash scripts/bakuhu/run_compact.sh <agent_id>` | auto-clear機能が閾値超過時に自動/clearを実行。**将軍は直接/clear禁止** |
 
 **禁止事項**:
 - エージェント自身が slim_yaml.sh を自分に対して実行すること（上位者が実行する）
@@ -142,7 +142,7 @@ compact回数カウンタ = 0 で運用開始
 | 75-85% | compact_count >= 3 → 即座に `/clear`、count = 0 | 3 → clear |
 | 85%+ | **緊急**: dashboard.md に「家老過労」と記載し、即座に `/clear`、count = 0 | 強制clear |
 
-**85%+ 時**: ntfy通知なし。まず dashboard.md に記録し、`bash scripts/run_compact.sh <agent_id>` を実行。auto-clear機能が閾値超過を検知して自動/clearを実行する。将軍が直接/clearを送ることは禁止。
+**85%+ 時**: ntfy通知なし。まず dashboard.md に記録し、`bash scripts/bakuhu/run_compact.sh <agent_id>` を実行。auto-clear機能が閾値超過を検知して自動/clearを実行する。将軍が直接/clearを送ることは禁止。
 
 ## 家老 /compact カスタム指示テンプレート（完全版）
 

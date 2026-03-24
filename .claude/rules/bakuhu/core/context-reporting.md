@@ -4,7 +4,7 @@ All agents must follow these rules when reporting context usage.
 
 ## Measurement
 
-- Context % MUST come from `/context` command output or `scripts/check_context.sh` (when available)
+- Context % MUST come from `/context` command output or `scripts/bakuhu/check_context.sh` (when available)
 - Guessing, estimating, or "feeling" is FORBIDDEN
 - If neither method is available, report "未測定" (not measured) — never fabricate a number
 
@@ -84,9 +84,9 @@ Status indicators:
 
 ## /compact Execution Rules
 
-- /compactは必ず scripts/run_compact.sh 経由で上位者が実行する
+- /compactは必ず scripts/bakuhu/run_compact.sh 経由で上位者が実行する
 - エージェント自身が /compact を直接入力することは禁止
-- Usage: `bash scripts/run_compact.sh <agent_id>`
+- Usage: `bash scripts/bakuhu/run_compact.sh <agent_id>`
 - 詳細テンプレートは skills/context-health.md を参照
 - 60%到達で現タスク後すぐrun_compact.sh経由でcompact
 - compact後に上位者が再測定、改善なければ/clearを指示

@@ -76,7 +76,7 @@ echo "Context: $CONTEXT_PERCENT"
 
 # Auto-run /clear if context is still at or above Critical threshold
 # Threshold is read from config/settings.yaml (context.thresholds.critical)
-SETTINGS_YAML="${SCRIPT_DIR}/../config/settings.yaml"
+SETTINGS_YAML="${SCRIPT_DIR}/../../config/settings.yaml"
 CLEAR_THRESHOLD=""
 if [ -f "$SETTINGS_YAML" ]; then
     CLEAR_THRESHOLD=$(grep -A5 'thresholds:' "$SETTINGS_YAML" | grep 'critical:' | grep -oE '[0-9]+' | head -1)

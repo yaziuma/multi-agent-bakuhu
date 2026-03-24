@@ -10,7 +10,7 @@ HOOK_NAME="global-guard"
 
 # hook_common.sh をsource（自動的に整合性検証+エポック検証）
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/../../../scripts/lib/hook_common.sh"
+source "$SCRIPT_DIR/../../../scripts/bakuhu/lib/hook_common.sh"
 
 # NOTE: global-guardはロールチェック不要（全ロールで実行）
 # ただしtmux外の場合はスキップ（hook_common.shのget_role()はtmux必須のため

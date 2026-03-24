@@ -12,7 +12,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 MAP_FILE="$PROJECT_DIR/config/pane_role_map.yaml"
 MAP_HASH_FILE="$MAP_FILE.sha256"
 MAP_LOCK_FILE="$MAP_FILE.lock"

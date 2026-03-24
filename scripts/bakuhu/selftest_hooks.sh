@@ -9,11 +9,11 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 POLICY_DIR="$PROJECT_DIR/.claude/hooks/core/policies"
 HOOK_DIR="$PROJECT_DIR/.claude/hooks/core"
 LOG_FILE="$PROJECT_DIR/logs/selftest_failure.log"
-HOOK_COMMON="$PROJECT_DIR/scripts/lib/hook_common.sh"
+HOOK_COMMON="$PROJECT_DIR/scripts/bakuhu/lib/hook_common.sh"
 
 # 色付きログ
 log_pass() { echo -e "\033[1;32m[PASS]\033[0m $1"; }
@@ -102,8 +102,8 @@ echo ""
 # === Test 4: コアスクリプトの存在チェック ===
 log_info "Test 4: コアスクリプトチェック"
 CORE_SCRIPTS=(
-    "scripts/get_pane_id.sh"
-    "scripts/get_agent_role.sh"
+    "scripts/bakuhu/get_pane_id.sh"
+    "scripts/bakuhu/get_agent_role.sh"
 )
 for script in "${CORE_SCRIPTS[@]}"; do
     FULL_PATH="$PROJECT_DIR/$script"

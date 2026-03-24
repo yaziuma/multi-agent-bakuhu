@@ -937,7 +937,7 @@ Each role has a dedicated memory file. Cross-role writes are blocked at the hook
 
 #### Startup self-test
 
-`scripts/selftest_hooks.sh` verifies the hook system at session startup:
+`scripts/bakuhu/selftest_hooks.sh` verifies the hook system at session startup:
 - All hook files exist with correct execute permissions
 - SHA-256 integrity of `hook_common.sh` (the shared hook library)
 - JSON Schema validation of all policy YAML files
@@ -1423,14 +1423,14 @@ Requires Gemini CLI and/or Codex CLI installed separately.
 
 ```bash
 # Check Karo's context usage (run from Shogun)
-bash scripts/check_context.sh karo
+bash scripts/bakuhu/check_context.sh karo
 
 # Check specific Ashigaru
-bash scripts/check_context.sh ashigaru1
+bash scripts/bakuhu/check_context.sh ashigaru1
 
 # Run compact on an agent (via script, not direct)
-bash scripts/run_compact.sh karo
-bash scripts/run_compact.sh ashigaru1
+bash scripts/bakuhu/run_compact.sh karo
+bash scripts/bakuhu/run_compact.sh ashigaru1
 ```
 
 **Important:** Context measurement must be done externally (Shogun measures Karo, Karo measures Ashigaru). Self-measurement is inaccurate.
@@ -1574,11 +1574,11 @@ To manually check inbox delivery: `cat queue/inbox/{agent}.yaml`
 
 ```bash
 # Measure agent context (run externally — self-measurement is inaccurate)
-bash scripts/check_context.sh karo
-bash scripts/check_context.sh ashigaru1
+bash scripts/bakuhu/check_context.sh karo
+bash scripts/bakuhu/check_context.sh ashigaru1
 
 # Trigger compact (Shogun triggers for Karo; Karo triggers for Ashigaru)
-bash scripts/run_compact.sh karo
+bash scripts/bakuhu/run_compact.sh karo
 ```
 
 Thresholds: 60% → compact after current task; 85%+ → `/clear` immediately.

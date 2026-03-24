@@ -139,6 +139,6 @@ rules:
 #      bash -n .claude/hooks/core/karo-guard.sh  # checks the hook script
 #
 # 4. The selftest validates policy YAML structure:
-#      bash scripts/selftest_hooks.sh
+#      bash scripts/bakuhu/selftest_hooks.sh
 #
 # 5. policy_schema.json defines the required YAML schema for validation.
