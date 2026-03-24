@@ -54,3 +54,14 @@ kyakusho:
 server:
   host: "0.0.0.0"
   port: 30000
+
+# コンテキスト閾値設定
+# run_compact.sh が /clear を自動実行するかどうかの判定に使用
+# warning: 注意域（compact推奨）
+# danger:  危険域（即時compact必須）
+# critical: 危機域（compact後も超えていれば /clear を自動実行）
+context:
+  thresholds:
+    warning: 60
+    danger: 70
+    critical: 80

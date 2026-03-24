@@ -8,7 +8,7 @@
 #   1. agent_idからtmux paneを動的に解決
 #   2. /compactコマンドを送信（send-keys 2回分離）
 #   3. 完了を待機（"Compacted" 文字列をcapture-paneで監視）
-#   4. check_context.shを呼んで圧縮後の%を表示
+#   4. check_context.shを呼んで圧縮後の%を表示（閾値はconfig/settings.yamlから取得）
 # ═══════════════════════════════════════════════════════════════
 
 set -euo pipefail
@@ -19,7 +19,6 @@ source "${SCRIPT_DIR}/lib/resolve_pane.sh"
 
 # ─── Main ───
 AGENT_ID="${1:-}"
-TIMEOUT=60  # Minimum timeout for /compact (can take time)
 
 if [ -z "$AGENT_ID" ]; then
     echo "Usage: bash scripts/run_compact.sh <agent_id>" >&2
@@ -49,11 +48,10 @@ if ! timeout 5 tmux send-keys -t "$PANE_ID" Enter 2>/dev/null; then
 fi
 
 # Wait for compact to complete (look for "Compacted" message in pane output)
-ELAPSED=0
+# No timeout — caller runs this in background; wait until compact finishes
 COMPLETED=false
-while [ $ELAPSED -lt $TIMEOUT ]; do
+while true; do
     sleep 2
-    ELAPSED=$((ELAPSED + 2))
 
     # Capture recent output from pane
     OUTPUT=$(timeout 5 tmux capture-pane -t "$PANE_ID" -p -S -80 2>/dev/null || true)
@@ -64,11 +62,6 @@ while [ $ELAPSED -lt $TIMEOUT ]; do
         break
     fi
 done
-
-if [ "$COMPLETED" = false ]; then
-    echo "ERROR: /compact did not complete within ${TIMEOUT}s for agent '$AGENT_ID'" >&2
-    exit 1
-fi
 
 echo "done." >&2
 
@@ -82,17 +75,19 @@ CONTEXT_PERCENT=$(bash "${SCRIPT_DIR}/check_context.sh" "$AGENT_ID" 2>/dev/null 
 echo "Context: $CONTEXT_PERCENT"
 
 # Auto-run /clear if context is still at or above Critical threshold
-# Threshold is read from context-reporting.md (no hardcoding per 殿の厳命)
-CONTEXT_RULES="${SCRIPT_DIR}/../.claude/rules/bakuhu/core/context-reporting.md"
+# Threshold is read from config/settings.yaml (context.thresholds.critical)
+SETTINGS_YAML="${SCRIPT_DIR}/../config/settings.yaml"
 CLEAR_THRESHOLD=""
-if [ -f "$CONTEXT_RULES" ]; then
-    # Extract the Critical threshold (last match = Strict Thresholds table overrides original)
-    # Matches lines like: "| 80%+ | ⚫ Critical | ..."
-    CLEAR_THRESHOLD=$(grep -E '^\| *[0-9]+%\+ *\|.*Critical' "$CONTEXT_RULES" | \
-        grep -oE '[0-9]+%\+' | grep -oE '[0-9]+' | tail -1)
+if [ -f "$SETTINGS_YAML" ]; then
+    CLEAR_THRESHOLD=$(grep -A5 'thresholds:' "$SETTINGS_YAML" | grep 'critical:' | grep -oE '[0-9]+' | head -1)
 fi
 
-if [ "$CONTEXT_PERCENT" != "unknown" ] && [ -n "$CLEAR_THRESHOLD" ]; then
+if [ -z "$CLEAR_THRESHOLD" ]; then
+    echo "ERROR: config/settings.yaml に context.thresholds.critical が未定義です" >&2
+    exit 1
+fi
+
+if [ "$CONTEXT_PERCENT" != "unknown" ]; then
     PERCENT_NUM=$(echo "$CONTEXT_PERCENT" | grep -oE '^[0-9]+')
     if [ -n "$PERCENT_NUM" ] && [ "$PERCENT_NUM" -ge "$CLEAR_THRESHOLD" ] 2>/dev/null; then
         echo "Context ${CONTEXT_PERCENT} >= ${CLEAR_THRESHOLD}% (Critical threshold). Running /clear automatically..." >&2

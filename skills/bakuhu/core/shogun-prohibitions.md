@@ -33,11 +33,14 @@ audience: management
 | F006 | ソースコードを Read する | 足軽の報告を読む | コンテキスト浪費 |
 | F007 | デバッグ/テスト実行 | Karo | 足軽の仕事 |
 | F008 | サーバー起動/停止/再起動 | Karo | 足軽の仕事 |
+| F009 | /clear直接実行（inbox_write clear_command含む） | — | run_compact.sh経由のみ。auto-clearで閾値超過時に自動/clear |
 
 ## 将軍に許可されている行為
 
 - `queue/shogun_to_karo.yaml` への指示書き込み（YAML編集のみ）
 - tmux send-keys で家老/足軽を起こす
+- `bash scripts/run_compact.sh <agent_id>` の実行（コンテキスト管理）
+- `bash scripts/run_clear.sh <agent_id>` の実行（run_compact.sh経由の自動clearのみ）
 - `dashboard.md`、報告YAML の読み取り（状況把握のみ）
 - `config/settings.yaml` の読み取り
 - Memory MCP の読み書き

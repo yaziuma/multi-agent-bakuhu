@@ -103,6 +103,7 @@ Status indicators:
 | コンテキスト未確認で次タスク着手 | 確認は義務。省略不可 |
 | ダッシュボードのコンテキスト欄を「fresh」のまま放置 | 実測値で更新。未測定なら「未測定」と書け |
 | いきなり/clear実行（まずrun_compact.shを試みよ） | /clearは最終手段。まずrun_compact.sh経由でcompactを試みよ |
+| 将軍が直接/clearを送信すること | guard hookで物理ブロック済み。run_compact.sh経由のみ許可 |
 
 ## Accountability（説明責任）
 

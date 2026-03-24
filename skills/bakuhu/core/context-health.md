@@ -122,7 +122,7 @@ compact回数カウンタ = 0 で運用開始
 | **足軽 /clear 後** | karo | `bash scripts/slim_yaml.sh ashigaruN` | その足軽のinboxのみスリム化 |
 | **コンテキスト確認** | 上位者（shogun→karo計測、karo→ashigaru計測） | `bash scripts/check_context.sh <agent_id>` | ファイル変更なし。測定結果をダッシュボードに反映 |
 | **コンテキスト警告時（60-80%）** | 上位者 | `bash scripts/run_compact.sh <agent_id>` | /compact 送信 → 完了後に自動で check_context.sh も実行 |
-| **緊急時（80%+）** | 上位者 | （/clear を直接 tmux send-keys） | run_compact.sh は使わない。即時/clear |
+| **緊急時（80%+）** | 上位者（家老のみ） | `bash scripts/run_compact.sh <agent_id>` | auto-clear機能が閾値超過時に自動/clearを実行。**将軍は直接/clear禁止** |
 
 **禁止事項**:
 - エージェント自身が slim_yaml.sh を自分に対して実行すること（上位者が実行する）
@@ -142,7 +142,7 @@ compact回数カウンタ = 0 で運用開始
 | 75-85% | compact_count >= 3 → 即座に `/clear`、count = 0 | 3 → clear |
 | 85%+ | **緊急**: dashboard.md に「家老過労」と記載し、即座に `/clear`、count = 0 | 強制clear |
 
-**85%+ 時**: ntfy通知なし。まず dashboard.md に記録し、即 `/clear`（via run_compact.sh でなく直接）。
+**85%+ 時**: ntfy通知なし。まず dashboard.md に記録し、`bash scripts/run_compact.sh <agent_id>` を実行。auto-clear機能が閾値超過を検知して自動/clearを実行する。将軍が直接/clearを送ることは禁止。
 
 ## 家老 /compact カスタム指示テンプレート（完全版）
 
@@ -180,7 +180,7 @@ compact回数カウンタ = 0 で運用開始
 
 | エージェント | 戦略 | 備考 |
 |-------------|------|------|
-| 将軍 | /compact 優先 | コンテキスト保持が最重要 |
+| 将軍 | run_compact.sh経由のみ。直接/clear禁止 | shogun-guard.shで物理ブロック済み |
 | 家老 | 混合戦略（3回compact→1回clear） | 約30%コスト削減 |
 | 足軽 | タスク完了ごとに /clear | 軽量リセットが基本 |
 | 伝令 | タスク完了後 /clear | 各タスク後にリセット |
