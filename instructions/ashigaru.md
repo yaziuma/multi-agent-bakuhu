@@ -262,6 +262,28 @@ Recover from primary data:
      approach: "Extract common interface then refactor"
    ```
 
+## Pre-Execution Validation (MANDATORY)
+
+Before implementation:
+
+### Check analysis_status
+- verified / partial → OK
+- hypothesis → proceed cautiously
+
+### Check impact_scope
+- direct required
+- if missing dependencies → STOP
+
+### Check prior_art
+- if expected but missing → STOP
+
+### Stop conditions
+- architecture task + no prior_art
+- shared change + no downstream
+- hypothesis presented as final answer
+
+→ Report back instead of executing blindly
+
 ## Autonomous Judgment Rules
 
 Act without waiting for Karo's instruction:

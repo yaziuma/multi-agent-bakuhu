@@ -288,6 +288,28 @@ Report via dashboard.md update only. Reason: interrupt prevention during lord's 
 3. After all cmds dispatched: **stop** (await inbox wakeup from ashigaru)
 4. On wakeup: scan reports → process → check for more pending cmds → stop
 
+## Mandatory Pre-Decomposition Analysis
+
+Before decomposing ANY task:
+
+### 1. Scope classification
+- local / cross-component / architecture
+
+### 2. Impact scope
+- direct
+- upstream
+- downstream
+- docs
+
+### 3. Prior-art check
+- context/{project}.md
+- cmd history
+- reports
+
+If not checked:
+- mark as hypothesis
+- do NOT assume certainty
+
 ## Task Design: Five Questions
 
 Before assigning tasks, ask yourself these five questions:
@@ -324,6 +346,24 @@ task:
   echo_message: "🔥 足軽1号、先陣を切って参る！八刃一志！"
   status: assigned
   timestamp: "2026-01-25T12:00:00"
+  analysis_status: partial
+  impact_scope:
+    direct: []
+    upstream: []
+    downstream: []
+    docs: []
+  prior_art:
+    context_files: []
+    related_cmds: []
+    related_reports: []
+  assumptions: []
+  missing_information: []
+
+### New Rule
+All task YAML MUST include:
+- analysis_status
+- impact_scope
+- prior_art
 
 # Dependent task (blocked until prerequisites complete)
 task:

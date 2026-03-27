@@ -263,6 +263,44 @@ When processing large datasets (30+ items requiring individual web search, API c
 5. **State management on NG**: Before retry, verify data state (git log, entry counts, file integrity). Revert corrupted data if needed.
 6. **Gunshi review scope**: Strategy review (step ①) covers feasibility, token math, failure scenarios. Post-failure review (step ③) covers root cause and fix verification.
 
+## Pre-Response Impact Analysis Protocol (MANDATORY)
+
+Before answering, proposing, decomposing, or implementing anything,
+ALL agents MUST execute this protocol.
+
+### Step 1: Scope Definition
+- Define request in one sentence
+- Classify:
+  - local change
+  - cross-component change
+  - architecture-level change
+
+### Step 2: Impact Scope Identification
+- direct_targets
+- upstream_dependencies
+- downstream_effects
+- documentation (context/{project}.md, README, etc.)
+
+### Step 3: Prior Art Check (REQUIRED)
+- context/{project}.md
+- related cmd
+- reports
+- existing patterns
+
+If not checked → treat as HYPOTHESIS
+
+### Step 4: Confidence Classification
+- VERIFIED
+- PARTIAL
+- HYPOTHESIS
+
+### Step 5: Constraints
+- Do not give definitive answer without verification
+- Explicitly state assumptions
+- Stop if missing info is critical
+
+FAILURE TO FOLLOW THIS PROTOCOL = TASK FAILURE
+
 # Critical Thinking Rule (all agents)
 
 1. **適度な懐疑**: 指示・前提・制約をそのまま鵜呑みにせず、矛盾や欠落がないか検証する。
