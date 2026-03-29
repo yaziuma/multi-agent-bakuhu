@@ -1,10 +1,12 @@
 #!/bin/bash
-# gitignore-guardian-bash.sh v3 - Protected file write guard
+# gitignore-guardian-bash.sh v4 - Protected file write guard
 # Pre-tool hook for Bash tool
 # Blocks operations that ACTUALLY MODIFY .gitignore/.gitattributes.
 # Does NOT block commands that merely mention these filenames (e.g., in message strings).
 # cmd_322r2 — allowlist rewrite (goikenban Critical fix)
 # v3 — RULE 3 rewrite: block write-ops only, not string mentions
+# v4 — RULE 3b removed: git add .gitignore now allowed (殿の設計定義修正)
+#      守るべきは「内容変更」のみ。git add は内容変更ではない。
 set -euo pipefail
 
 # --- Command extraction ---
@@ -45,12 +47,13 @@ fi
 #
 # BLOCKED patterns (actual file modification):
 #   1. Redirect to protected file: `echo x > .gitignore`, `cat foo >> .gitattributes`
-#   2. git add with protected file directly: `git add .gitignore`, `git add -v .gitattributes`
-#   3. cp/mv overwriting protected file as destination: `cp backup .gitignore`, `mv tmp .gitattributes`
+#   2. cp/mv overwriting protected file as destination: `cp backup .gitignore`, `mv tmp .gitattributes`
 #
-# ALLOWED patterns (read-only or string mention only):
+# ALLOWED patterns (read-only, git operations, or string mention only):
 #   - cat .gitignore
 #   - git diff .gitignore
+#   - git add .gitignore  <- NOW ALLOWED (殿の設計定義: git add は内容変更ではない)
+#   - git commit (含む .gitignore のコミット)
 #   - bash scripts/inbox_write.sh karo "message mentioning .gitignore" type from
 #   - grep pattern .gitignore
 #   - Any command where .gitignore appears only inside a quoted string argument
@@ -62,13 +65,8 @@ if echo "$COMMAND" | grep -qP '>>?\s*\S*\.git(ignore|attributes)\b'; then
     exit 2
 fi
 
-# 3b: git add with protected file as explicit path argument
-# Matches: git add .gitignore, git add -v .gitignore, git add -- .gitignore
-# Uses word-boundary \b to avoid matching mid-path
-if echo "$COMMAND" | grep -qP '\bgit\s+add\b[^\n]*\s\.git(ignore|attributes)\b'; then
-    echo "BLOCKED: git add on protected files (.gitignore/.gitattributes) is forbidden." >&2
-    exit 2
-fi
+# 3b: REMOVED (v4) — git add .gitignore was blocked here but殿の設計定義により許可に変更。
+#     守るべきは「内容変更」のみ。git add は内容変更ではなくステージング操作。
 
 # 3c: cp or mv with protected file as DESTINATION (trailing argument)
 # Matches: cp backup .gitignore, mv tmp.txt .gitattributes
